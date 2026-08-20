@@ -1,14 +1,47 @@
 // ─── Model Data Utama ─────────────────────────────────────────────────────────
 
 /**
+ * Representasi satu lampiran file dari tabel `task_attachments`.
+ */
+export interface TaskAttachment {
+  id: string
+  task_id: string | number
+  user_id?: string | null
+  file_name: string
+  file_path: string
+  file_type: string
+  file_size: number
+  is_private: boolean
+  created_at: string
+  // Virtual / helper URL fields untuk kemudahan render di UI
+  url?: string
+  thumbnail_url?: string
+}
+
+/**
+ * Representasi file yang dipilih di form sebelum di-upload.
+ */
+export interface SelectedUploadFile {
+  id: string
+  file: File
+  name: string
+  size: number
+  type: string
+  previewUrl?: string
+  isPrivate: boolean
+}
+
+/**
  * Representasi satu baris tugas dari tabel `todos` di Supabase.
  */
 export interface Task {
-  id: number
+  id: string | number
   task: string
   is_completed: boolean
   image_url: string | null
   created_at: string
+  user_id?: string | null
+  task_attachments?: TaskAttachment[]
 }
 
 /**
@@ -19,6 +52,7 @@ export interface TaskPayload {
   task: string
   is_completed?: boolean
   image_url?: string | null
+  user_id?: string | null
 }
 
 // ─── Activity Log (Realtime) ──────────────────────────────────────────────────
@@ -75,5 +109,15 @@ export interface BackupFile {
  */
 export interface TaskFormSubmitPayload {
   taskText: string
-  selectedFile: File | null
+  files: SelectedUploadFile[]
+}
+
+/**
+ * Tipe item yang ditampilkan dalam Galeri Lightbox.
+ */
+export interface LightboxMediaItem {
+  url: string
+  title?: string
+  fileName?: string
+  isPrivate?: boolean
 }

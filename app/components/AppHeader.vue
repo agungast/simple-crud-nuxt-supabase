@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <!-- Right: Search + Actions -->
+    <!-- Right: Search + User Menu -->
     <div class="topbar-right">
       <div class="search-box">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -28,16 +28,63 @@
         <input type="text" placeholder="Cari tugas..." class="search-input" />
       </div>
 
+      <!-- User Avatar & Dropdown -->
+      <div class="user-menu-wrap" ref="menuRef">
+        <button class="topbar-avatar" @click="showDropdown = !showDropdown" title="Menu Pengguna">
+          {{ authStore.userInitials }}
+        </button>
 
-      <div class="topbar-avatar">A</div>
+        <Transition name="fade">
+          <div v-if="showDropdown" class="user-dropdown">
+            <div class="user-dropdown-header">
+              <span class="dropdown-name">{{ authStore.displayName }}</span>
+              <span class="dropdown-email" :title="authStore.userEmail">{{ authStore.userEmail }}</span>
+            </div>
+            <div class="user-dropdown-divider"></div>
+            <button class="dropdown-item logout" @click="handleLogout">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              <span>Keluar (Sign Out)</span>
+            </button>
+          </div>
+        </Transition>
+      </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '~/stores/authStore'
+
 const emit = defineEmits<{
   (e: 'toggle-sidebar'): void
 }>()
+
+const authStore = useAuthStore()
+const showDropdown = ref<boolean>(false)
+const menuRef = ref<HTMLDivElement | null>(null)
+
+const handleLogout = () => {
+  showDropdown.value = false
+  authStore.openLogoutModal()
+}
+
+const handleClickOutside = (e: MouseEvent) => {
+  if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
+    showDropdown.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
@@ -105,7 +152,7 @@ const emit = defineEmits<{
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .search-box {
@@ -139,42 +186,17 @@ const emit = defineEmits<{
   color: #475569;
 }
 
-.icon-btn {
-  background: transparent;
-  border: none;
-  color: #64748b;
-  cursor: pointer;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* User Menu & Dropdown */
+.user-menu-wrap {
   position: relative;
-  transition: all 0.2s ease;
-}
-
-.icon-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #94a3b8;
-}
-
-.notif-dot {
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  width: 7px;
-  height: 7px;
-  background: #6366f1;
-  border-radius: 50%;
-  border: 2px solid #1e293b;
 }
 
 .topbar-avatar {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   border-radius: 50%;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -182,6 +204,90 @@ const emit = defineEmits<{
   font-weight: 700;
   color: #ffffff;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.topbar-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.5);
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.user-dropdown-header {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdown-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.dropdown-email {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-dropdown-divider {
+  height: 1px;
+  background: #334155;
+}
+
+.dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-item.logout {
+  color: #f87171;
+}
+
+.dropdown-item.logout:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 @media (max-width: 640px) {

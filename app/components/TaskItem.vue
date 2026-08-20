@@ -23,25 +23,58 @@
       </button>
     </td>
 
-    <!-- Gambar -->
+    <!-- Lampiran (Gambar & Dokumen) -->
     <td class="td-img">
-      <div
-        v-if="task.image_url"
-        class="thumb-wrap"
-        @click="emit('open-lightbox', task.image_url)"
-        title="Lihat gambar"
-      >
-        <img :src="task.image_url" :alt="`Gambar: ${task.task}`" class="thumb-img" />
-        <div class="thumb-overlay">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            <line x1="11" y1="8" x2="11" y2="14"></line>
-            <line x1="8" y1="11" x2="14" y2="11"></line>
-          </svg>
+      <div v-if="hasAttachments || task.image_url" class="attachments-cell">
+        <!-- Thumbnail Gambar Pertama (Image Transformation) -->
+        <div
+          v-if="primaryImage"
+          class="thumb-wrap"
+          @click="openGallery"
+          :title="`Lihat ${imageCount} gambar`"
+        >
+          <img
+            :src="taskStore.getThumbnailUrl(primaryImage.file_path || task.image_url || '', 80, 80)"
+            :alt="task.task"
+            class="thumb-img"
+            loading="lazy"
+          />
+          <div class="thumb-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span v-if="imageCount > 1" class="more-count">+{{ imageCount - 1 }}</span>
+          </div>
         </div>
+
+        <!-- Tombol / Badge Manajemen Semua Lampiran -->
+        <button
+          class="attachment-trigger-btn"
+          @click="taskStore.openAttachmentModal(task)"
+          :title="`${totalAttachments} Lampiran — Klik untuk kelola`"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+          </svg>
+          <span class="att-count">{{ totalAttachments }}</span>
+          <span v-if="hasPrivateAttachments" class="lock-dot" title="Memiliki file privat"></span>
+        </button>
       </div>
-      <span v-else class="no-img">—</span>
+
+      <!-- Tombol Tambah Lampiran Cepat jika Kosong -->
+      <button
+        v-else
+        class="add-att-quick-btn"
+        @click="taskStore.openAttachmentModal(task)"
+        title="Tambah Lampiran"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>File</span>
+      </button>
     </td>
 
     <!-- Aksi -->
@@ -125,7 +158,10 @@
 </template>
 
 <script setup lang="ts">
-import type { Task } from '~/types/task'
+import { useTaskStore } from '~/stores/taskStore'
+import type { Task, LightboxMediaItem } from '~/types/task'
+
+const taskStore = useTaskStore()
 
 // Props
 const props = defineProps<{
@@ -140,6 +176,53 @@ const emit = defineEmits<{
   (e: 'edit', payload: { task: Task; newName: string }): void
   (e: 'open-lightbox', url: string): void
 }>()
+
+// ─── Attachments Computed ──────────────────────────────────────────────────
+const attachments = computed(() => props.task.task_attachments || [])
+
+const totalAttachments = computed(() => {
+  if (attachments.value.length > 0) return attachments.value.length
+  return props.task.image_url ? 1 : 0
+})
+
+const hasAttachments = computed(() => totalAttachments.value > 0)
+
+const isImage = (mimeType: string) => mimeType ? mimeType.startsWith('image/') : false
+
+const imageAttachments = computed(() => {
+  return attachments.value.filter(a => isImage(a.file_type))
+})
+
+const imageCount = computed(() => {
+  if (imageAttachments.value.length > 0) return imageAttachments.value.length
+  return props.task.image_url ? 1 : 0
+})
+
+const primaryImage = computed(() => {
+  if (imageAttachments.value.length > 0) return imageAttachments.value[0]
+  if (props.task.image_url) {
+    return { file_path: props.task.image_url, file_name: props.task.task }
+  }
+  return null
+})
+
+const hasPrivateAttachments = computed(() => {
+  return attachments.value.some(a => a.is_private)
+})
+
+const openGallery = () => {
+  if (imageAttachments.value.length > 0) {
+    const items: LightboxMediaItem[] = imageAttachments.value.map(a => ({
+      url: a.is_private ? a.file_path : taskStore.getPublicOriginalUrl(a.file_path),
+      title: `${props.task.task} — ${a.file_name}`,
+      fileName: a.file_name,
+      isPrivate: a.is_private
+    }))
+    taskStore.openLightboxGallery(items, 0)
+  } else if (props.task.image_url) {
+    taskStore.openLightbox(props.task.image_url, props.task.task)
+  }
+}
 
 // ─── Konfirmasi Hapus ─────────────────────────────────────────────────────────
 const showConfirm = ref<boolean>(false)
@@ -277,9 +360,15 @@ td {
   flex-shrink: 0;
 }
 
-/* Image thumbnail */
+/* Image / Attachments cell */
 .td-img {
-  width: 80px;
+  width: 110px;
+}
+
+.attachments-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .thumb-wrap {
@@ -291,6 +380,7 @@ td {
   cursor: pointer;
   border: 1px solid #334155;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .thumb-img {
@@ -302,13 +392,21 @@ td {
 .thumb-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   opacity: 0;
   transition: opacity 0.2s ease;
   color: #fff;
+}
+
+.more-count {
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 1px;
 }
 
 .thumb-wrap:hover {
@@ -318,6 +416,56 @@ td {
 
 .thumb-wrap:hover .thumb-overlay {
   opacity: 1;
+}
+
+.attachment-trigger-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #818cf8;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.attachment-trigger-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: #818cf8;
+  transform: translateY(-1px);
+}
+
+.lock-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 4px #f59e0b;
+}
+
+.add-att-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px dashed #334155;
+  color: #64748b;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.add-att-quick-btn:hover {
+  border-color: #818cf8;
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.08);
 }
 
 .no-img {

@@ -27,7 +27,7 @@
           <th class="col-no">#</th>
           <th class="col-task">Tugas</th>
           <th class="col-status">Status</th>
-          <th class="col-img">Gambar</th>
+          <th class="col-img">Lampiran</th>
           <th class="col-action">Aksi</th>
         </tr>
       </thead>

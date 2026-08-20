@@ -1,0 +1,408 @@
+<template>
+  <div class="auth-card">
+    <div class="auth-card-header">
+      <div class="header-icon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+      </div>
+      <h2 class="auth-card-title">Atur Ulang Kata Sandi</h2>
+      <p class="auth-card-desc">Masukkan kata sandi baru yang aman untuk akun Anda</p>
+    </div>
+
+    <!-- Alert Error / Success -->
+    <div v-if="localError || authStore.authError" class="auth-alert error">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ localError || authStore.authError }}</span>
+    </div>
+
+    <div v-if="authStore.successMessage" class="auth-alert success">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>{{ authStore.successMessage }}</span>
+    </div>
+
+    <!-- Reset Password Form -->
+    <form @submit.prevent="handleResetPassword" class="auth-form">
+      <!-- Password Baru -->
+      <div class="form-group">
+        <label class="form-label" for="new-password">Kata Sandi Baru</label>
+        <div class="input-wrap">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <input
+            id="new-password"
+            v-model="password"
+            :type="showPassword ? 'text' : 'password'"
+            required
+            placeholder="Minimal 6 karakter"
+            minlength="6"
+            class="form-input has-toggle"
+            :disabled="authStore.loading"
+          />
+          <button
+            type="button"
+            class="toggle-pwd-btn"
+            @click="showPassword = !showPassword"
+            tabindex="-1"
+            title="Lihat kata sandi"
+          >
+            <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Konfirmasi Password Baru -->
+      <div class="form-group">
+        <label class="form-label" for="confirm-new-password">Konfirmasi Kata Sandi Baru</label>
+        <div class="input-wrap">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <input
+            id="confirm-new-password"
+            v-model="confirmPassword"
+            :type="showPassword ? 'text' : 'password'"
+            required
+            placeholder="Ulangi kata sandi baru"
+            minlength="6"
+            class="form-input"
+            :disabled="authStore.loading"
+          />
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="auth-submit-btn" :disabled="authStore.loading || !password || !confirmPassword">
+        <span v-if="authStore.loading" class="spinner"></span>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>{{ authStore.loading ? 'Memperbarui...' : 'Simpan Kata Sandi Baru' }}</span>
+      </button>
+    </form>
+
+    <!-- Switch to Login -->
+    <div class="auth-card-footer">
+      <NuxtLink to="/login" class="back-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Kembali ke Halaman Masuk</span>
+      </NuxtLink>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useAuthStore } from '~/stores/authStore'
+
+definePageMeta({
+  layout: 'auth'
+})
+
+const route = useRoute()
+const router = useRouter()
+const supabase = useSupabaseClient()
+const authStore = useAuthStore()
+
+const password = ref<string>('')
+const confirmPassword = ref<string>('')
+const showPassword = ref<boolean>(false)
+const localError = ref<string | null>(null)
+const hasValidSession = ref<boolean>(true)
+const checkingSession = ref<boolean>(true)
+
+onMounted(async () => {
+  authStore.clearMessages()
+
+  // 1. Tangani PKCE Flow jika ada query `code` di URL email
+  const code = route.query.code as string
+  if (code) {
+    try {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      if (!error && data.session) {
+        hasValidSession.value = true
+        checkingSession.value = false
+        return
+      }
+    } catch (err) {
+      console.warn('PKCE exchange error:', err)
+    }
+  }
+
+  // 2. Cek apakah ada session aktif / token dari recovery
+  const { data: sessionData } = await supabase.auth.getSession()
+  if (sessionData?.session) {
+    hasValidSession.value = true
+    checkingSession.value = false
+    return
+  }
+
+  // 3. Dengarkan event auth jika token hash (#access_token) sedang diproses
+  const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY' || (session && event === 'SIGNED_IN')) {
+      hasValidSession.value = true
+      checkingSession.value = false
+    }
+  })
+
+  // Berikan waktu toleransi singkat untuk client memproses hash fragment
+  setTimeout(() => {
+    checkingSession.value = false
+    if (!authStore.user && !hasValidSession.value) {
+      localError.value = 'Sesi pemulihan tidak ditemukan. Pastikan Anda membuka halaman ini dengan mengklik tautan yang dikirimkan ke email Anda.'
+    }
+  }, 1200)
+})
+
+const handleResetPassword = async () => {
+  localError.value = null
+
+  if (password.value.length < 6) {
+    localError.value = 'Kata sandi minimal harus terdiri dari 6 karakter.'
+    return
+  }
+
+  if (password.value !== confirmPassword.value) {
+    localError.value = 'Konfirmasi kata sandi tidak cocok. Silakan periksa kembali.'
+    return
+  }
+
+  await authStore.updatePassword(password.value)
+}
+</script>
+
+<style scoped>
+.auth-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 32px 28px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+}
+
+.auth-card-header {
+  margin-bottom: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-icon-wrap {
+  width: 48px;
+  height: 48px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4ade80;
+  margin-bottom: 12px;
+}
+
+.auth-card-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.auth-card-desc {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+/* Alert */
+.auth-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 20px;
+}
+
+.auth-alert.error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.auth-alert.success {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+.auth-alert svg {
+  flex-shrink: 0;
+}
+
+/* Form */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.form-input {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 9px;
+  padding: 10px 14px 10px 38px;
+  color: #f1f5f9;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.form-input.has-toggle {
+  padding-right: 40px;
+}
+
+.form-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.form-input::placeholder {
+  color: #475569;
+}
+
+.toggle-pwd-btn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.toggle-pwd-btn:hover {
+  color: #94a3b8;
+}
+
+/* Submit Button */
+.auth-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  border: none;
+  border-radius: 9px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  margin-top: 6px;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* Footer */
+.auth-card-footer {
+  margin-top: 24px;
+  text-align: center;
+  border-top: 1px solid #334155;
+  padding-top: 18px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #818cf8;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.back-link:hover {
+  color: #a5b4fc;
+}
+</style>
