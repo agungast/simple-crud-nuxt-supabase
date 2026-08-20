@@ -204,7 +204,7 @@ const activeCount = computed(() => props.tasks.filter(t => !t.is_completed).leng
 }
 
 .stat-pill.done {
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(255, 255, 255, 0.1);
   color: #4ade80;
 }
 

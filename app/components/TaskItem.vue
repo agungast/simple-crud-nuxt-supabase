@@ -230,7 +230,7 @@ td {
 
 .completed-text {
   text-decoration: line-through;
-  color: #475569;
+  color: #c1c7d3;
 }
 
 /* Status Badge */

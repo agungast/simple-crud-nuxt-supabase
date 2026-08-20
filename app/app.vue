@@ -53,15 +53,6 @@
           <span>Aktif</span>
           <span class="nav-badge warning">{{ activeCount }}</span>
         </a>
-
-        <p class="nav-label" style="margin-top: 24px;">PENGATURAN</p>
-        <a href="#" class="nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"></path>
-          </svg>
-          <span>Pengaturan</span>
-        </a>
       </nav>
 
       <!-- Sidebar Footer -->
@@ -170,7 +161,59 @@
                 </svg>
                 <h2 class="card-title">Daftar Tugas</h2>
               </div>
-              <span class="card-badge">{{ tasks.length }} tugas</span>
+              <div class="card-header-actions">
+                <span class="card-badge">{{ tasks.length }} tugas</span>
+                <!-- Tombol Download Backup -->
+                <div class="backup-menu-wrap" ref="backupMenuRef">
+                  <button
+                    class="backup-btn"
+                    @click="toggleBackupMenu"
+                    :disabled="backupLoading"
+                    title="Download Backup CSV"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    {{ backupLoading ? 'Memuat...' : 'Backup' }}
+                  </button>
+
+                  <!-- Dropdown daftar backup -->
+                  <div v-if="showBackupMenu" class="backup-dropdown">
+                    <div class="backup-dropdown-header">File Backup Tersedia</div>
+                    <div v-if="backupLoading" class="backup-loading">
+                      <span class="pulse-dot"></span> Memuat daftar...
+                    </div>
+                    <div v-else-if="latestBackups.length === 0" class="backup-empty">
+                      Belum ada file backup.<br/>
+                      <span class="backup-hint">Jalankan Edge Function terlebih dahulu.</span>
+                    </div>
+                    <ul v-else class="backup-list">
+                      <li
+                        v-for="file in latestBackups"
+                        :key="file.name"
+                        class="backup-item"
+                        @click="downloadBackup(file.name)"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <div class="backup-item-info">
+                          <span class="backup-item-name">{{ file.name }}</span>
+                          <span class="backup-item-meta">{{ formatBackupDate(file.created_at) }} · {{ formatFileSize(file.size_bytes) }}</span>
+                        </div>
+                        <svg class="backup-item-dl" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="7 10 12 15 17 10"></polyline>
+                          <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="card-body no-padding">
               <TaskList
@@ -218,6 +261,60 @@
             </TransitionGroup>
           </div>
         </div>
+
+        <!-- Cron Job Status Card -->
+        <div class="content-card cron-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <h2 class="card-title">Auto Cleanup (pg_cron)</h2>
+            </div>
+            <span
+              class="cron-status-badge"
+              :class="cronStatus ? (cronStatus.status === 'succeeded' ? 'cron-ok' : 'cron-fail') : 'cron-pending'"
+            >
+              {{ cronStatus ? (cronStatus.status === 'succeeded' ? '✓ Aktif' : '✗ Error') : '⏳ Belum berjalan' }}
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="cron-info-grid">
+              <div class="cron-info-item">
+                <span class="cron-info-label">Fungsi</span>
+                <span class="cron-info-value">Hapus tugas selesai &gt; 30 hari</span>
+              </div>
+              <div class="cron-info-item">
+                <span class="cron-info-label">Jadwal</span>
+                <span class="cron-info-value mono">{{ cronStatus?.schedule ?? '0 17 * * *' }} <span class="cron-tz">(UTC)</span></span>
+              </div>
+              <div class="cron-info-item">
+                <span class="cron-info-label">Setara WIB</span>
+                <span class="cron-info-value">Setiap hari pukul 00:00</span>
+              </div>
+              <div class="cron-info-item">
+                <span class="cron-info-label">Terakhir berjalan</span>
+                <span class="cron-info-value">
+                  {{ cronStatus?.last_run ? formatCronTime(cronStatus.last_run) : 'Belum pernah berjalan' }}
+                </span>
+              </div>
+              <div v-if="cronStatus?.message" class="cron-info-item cron-info-full">
+                <span class="cron-info-label">Pesan</span>
+                <span class="cron-info-value mono cron-message">{{ cronStatus.message }}</span>
+              </div>
+            </div>
+            <button class="cron-refresh-btn" @click="fetchCronStatus" :disabled="cronLoading">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="{ spinning: cronLoading }">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              {{ cronLoading ? 'Memuat...' : 'Refresh Status' }}
+            </button>
+          </div>
+        </div>
       </main>
     </div>
 
@@ -239,10 +336,109 @@ const lightboxImage = ref(null)
 const taskFormRef = ref(null)
 const sidebarCollapsed = ref(false)
 
+// ─── Backup Download ──────────────────────────────────────────────────────────
+const latestBackups = ref([])
+const backupLoading = ref(false)
+const showBackupMenu = ref(false)
+const backupMenuRef = ref(null)
+
+const toggleBackupMenu = async () => {
+  showBackupMenu.value = !showBackupMenu.value
+  if (showBackupMenu.value) {
+    await fetchLatestBackups()
+  }
+}
+
+const fetchLatestBackups = async () => {
+  backupLoading.value = true
+  try {
+    const { data, error } = await supabase.rpc('list_backup_files')
+    if (!error && data) {
+      latestBackups.value = data
+    } else if (error) {
+      console.warn('[Backup] list_backup_files belum tersedia:', error.message)
+    }
+  } catch (err) {
+    console.warn('[Backup] Gagal memuat daftar backup:', err)
+  } finally {
+    backupLoading.value = false
+  }
+}
+
+const downloadBackup = async (fileName) => {
+  const { data, error } = await supabase.storage
+    .from('backups')
+    .download(fileName)
+
+  if (error) {
+    alert('Gagal mengunduh file: ' + error.message)
+    return
+  }
+
+  // Trigger download di browser
+  const url = URL.createObjectURL(data)
+  const a   = document.createElement('a')
+  a.href    = url
+  a.download = fileName
+  a.click()
+  URL.revokeObjectURL(url)
+  showBackupMenu.value = false
+}
+
+const formatBackupDate = (iso) => {
+  if (!iso) return '-'
+  return new Date(iso).toLocaleDateString('id-ID', {
+    day: '2-digit', month: 'short', year: 'numeric'
+  })
+}
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return '-'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+// Tutup dropdown jika klik di luar
+const handleOutsideClick = (e) => {
+  if (backupMenuRef.value && !backupMenuRef.value.contains(e.target)) {
+    showBackupMenu.value = false
+  }
+}
+
 // ─── Activity Log ─────────────────────────────────────────────────────────────
 const activityLogs = ref([])
 const isRealtimeConnected = ref(false)
 let logIdCounter = 0
+
+// ─── Cron Job Status ──────────────────────────────────────────────────────────
+const cronStatus = ref(null)
+const cronLoading = ref(false)
+
+const fetchCronStatus = async () => {
+  cronLoading.value = true
+  try {
+    const { data, error } = await supabase.rpc('get_cron_status')
+    if (error) {
+      // RPC belum ada (SQL belum dijalankan) — abaikan tanpa crash
+      console.warn('[Cron] get_cron_status belum tersedia:', error.message)
+    } else if (data && data.length > 0) {
+      cronStatus.value = data[0]
+    }
+  } catch (err) {
+    console.warn('[Cron] Gagal mengambil status:', err)
+  } finally {
+    cronLoading.value = false
+  }
+}
+
+const formatCronTime = (isoString) => {
+  if (!isoString) return '-'
+  return new Date(isoString).toLocaleString('id-ID', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  })
+}
 
 const addLog = (eventType, taskName) => {
   const now = new Date()
@@ -288,7 +484,13 @@ onMounted(async () => {
   // 1. Ambil data awal
   await fetchTasks()
 
-  // 2. Buat koneksi Realtime
+  // 2. Ambil status cron job
+  await fetchCronStatus()
+
+  // 3. Listener tutup dropdown backup
+  document.addEventListener('click', handleOutsideClick)
+
+  // 4. Buat koneksi Realtime
   realtimeChannel = supabase
     .channel('pantau-tugas')
     .on(
@@ -298,7 +500,6 @@ onMounted(async () => {
         console.log('[Realtime] Event:', payload.eventType, payload)
 
         if (payload.eventType === 'INSERT') {
-          // Tambahkan ke paling atas tanpa re-fetch
           tasks.value.unshift(payload.new)
           addLog('INSERT', payload.new.task)
         }
@@ -322,6 +523,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  document.removeEventListener('click', handleOutsideClick)
   if (realtimeChannel) {
     supabase.removeChannel(realtimeChannel)
   }
@@ -962,5 +1164,264 @@ body {
 
 .log-list-move {
   transition: transform 0.3s ease;
+}
+
+/* ─── CRON STATUS CARD ────────────────────────────────────────────────────── */
+.cron-status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+}
+
+.cron-ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.cron-fail {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.cron-pending {
+  background: rgba(100, 116, 139, 0.12);
+  color: #94a3b8;
+  border: 1px solid #334155;
+}
+
+.cron-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+  margin-bottom: 16px;
+}
+
+.cron-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cron-info-full {
+  grid-column: 1 / -1;
+}
+
+.cron-info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cron-info-value {
+  font-size: 13px;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.cron-info-value.mono {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  color: #818cf8;
+}
+
+.cron-tz {
+  font-size: 10px;
+  color: #475569;
+}
+
+.cron-message {
+  font-size: 11px !important;
+  color: #64748b !important;
+  word-break: break-all;
+}
+
+.cron-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 7px;
+  color: #818cf8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.cron-refresh-btn:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.cron-refresh-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── BACKUP DOWNLOAD ─────────────────────────────────────────────────────── */
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.backup-menu-wrap {
+  position: relative;
+}
+
+.backup-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 7px;
+  color: #818cf8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.backup-btn:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.backup-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Dropdown */
+.backup-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 300px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  z-index: 500;
+  overflow: hidden;
+}
+
+.backup-dropdown-header {
+  padding: 11px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.3);
+}
+
+.backup-loading,
+.backup-empty {
+  padding: 20px 14px;
+  font-size: 13px;
+  color: #64748b;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.backup-empty {
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.6;
+}
+
+.backup-hint {
+  font-size: 11px;
+  color: #475569;
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  background: #6366f1;
+  border-radius: 50%;
+  animation: pulse 1.2s ease infinite;
+  flex-shrink: 0;
+}
+
+.backup-list {
+  list-style: none;
+  padding: 6px 0;
+  margin: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.backup-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  color: #94a3b8;
+}
+
+.backup-item:hover {
+  background: rgba(99, 102, 241, 0.06);
+  color: #c7d2fe;
+}
+
+.backup-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.backup-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backup-item-meta {
+  font-size: 11px;
+  color: #475569;
+}
+
+.backup-item-dl {
+  color: #475569;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.backup-item:hover .backup-item-dl {
+  color: #818cf8;
 }
 </style>
