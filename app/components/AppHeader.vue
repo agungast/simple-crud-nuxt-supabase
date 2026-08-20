@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <!-- Right: Search + User Menu -->
+    <!-- Right: Search + Cron Indicator + User Menu -->
     <div class="topbar-right">
       <div class="search-box">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -26,6 +26,83 @@
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
         <input type="text" placeholder="Cari tugas..." class="search-input" />
+      </div>
+
+      <!-- Auto Cleanup (pg_cron) Status Indicator -->
+      <div class="cron-menu-wrap" ref="cronMenuRef">
+        <button
+          class="cron-indicator-btn"
+          @click="showCronPopover = !showCronPopover"
+          title="Status Auto-Cleanup Database (pg_cron)"
+        >
+          <span
+            class="status-pulse-dot"
+            :class="taskStore.cronStatus ? (taskStore.cronStatus.status === 'succeeded' ? 'ok' : 'error') : 'pending'"
+          ></span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span class="cron-btn-text">pg_cron</span>
+        </button>
+
+        <Transition name="fade">
+          <div v-if="showCronPopover" class="cron-popover">
+            <div class="cron-popover-header">
+              <div class="cron-popover-title-row">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <span>Auto Cleanup (pg_cron)</span>
+              </div>
+              <span
+                class="cron-status-badge"
+                :class="taskStore.cronStatus ? (taskStore.cronStatus.status === 'succeeded' ? 'cron-ok' : 'cron-fail') : 'cron-pending'"
+              >
+                {{ taskStore.cronStatus ? (taskStore.cronStatus.status === 'succeeded' ? '✓ Aktif' : '✗ Error') : '⏳ Standby' }}
+              </span>
+            </div>
+
+            <div class="cron-popover-body">
+              <div class="cron-item">
+                <span class="cron-item-label">Fungsi:</span>
+                <span class="cron-item-val">Hapus tugas selesai &gt; 30 hari</span>
+              </div>
+              <div class="cron-item">
+                <span class="cron-item-label">Jadwal:</span>
+                <span class="cron-item-val mono">{{ taskStore.cronStatus?.schedule ?? '0 17 * * *' }} (00:00 WIB)</span>
+              </div>
+              <div class="cron-item">
+                <span class="cron-item-label">Terakhir:</span>
+                <span class="cron-item-val">
+                  {{ taskStore.cronStatus?.last_run ? taskStore.formatCronTime(taskStore.cronStatus.last_run) : 'Belum pernah berjalan' }}
+                </span>
+              </div>
+              <div v-if="taskStore.cronStatus?.message" class="cron-message-box">
+                {{ taskStore.cronStatus.message }}
+              </div>
+            </div>
+
+            <div class="cron-popover-footer">
+              <button
+                class="cron-popover-refresh-btn"
+                @click="taskStore.fetchCronStatus"
+                :disabled="taskStore.cronLoading"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="{ spinning: taskStore.cronLoading }">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <span>{{ taskStore.cronLoading ? 'Memuat...' : 'Refresh Status' }}</span>
+              </button>
+            </div>
+          </div>
+        </Transition>
       </div>
 
       <!-- User Avatar & Dropdown -->
@@ -58,14 +135,20 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/authStore'
+import { useTaskStore } from '~/stores/taskStore'
 
 const emit = defineEmits<{
   (e: 'toggle-sidebar'): void
 }>()
 
 const authStore = useAuthStore()
+const taskStore = useTaskStore()
+
 const showDropdown = ref<boolean>(false)
+const showCronPopover = ref<boolean>(false)
+
 const menuRef = ref<HTMLDivElement | null>(null)
+const cronMenuRef = ref<HTMLDivElement | null>(null)
 
 const handleLogout = () => {
   showDropdown.value = false
@@ -73,8 +156,12 @@ const handleLogout = () => {
 }
 
 const handleClickOutside = (e: MouseEvent) => {
-  if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
+  const target = e.target as Node
+  if (menuRef.value && !menuRef.value.contains(target)) {
     showDropdown.value = false
+  }
+  if (cronMenuRef.value && !cronMenuRef.value.contains(target)) {
+    showCronPopover.value = false
   }
 }
 
@@ -111,11 +198,10 @@ onUnmounted(() => {
 .toggle-btn {
   background: transparent;
   border: none;
-  color: #64748b;
+  color: #94a3b8;
   cursor: pointer;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  padding: 6px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -123,28 +209,25 @@ onUnmounted(() => {
 }
 
 .toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #94a3b8;
+  background: #334155;
+  color: #f1f5f9;
 }
 
 .breadcrumb {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
 }
 
 .breadcrumb-root {
-  color: #475569;
+  color: #94a3b8;
   font-weight: 500;
 }
 
-.breadcrumb svg {
-  color: #334155;
-}
-
 .breadcrumb-current {
-  color: #e2e8f0;
+  color: #f1f5f9;
   font-weight: 600;
 }
 
@@ -152,65 +235,244 @@ onUnmounted(() => {
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .search-box {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 7px 12px;
-  color: #475569;
-  transition: all 0.2s ease;
 }
 
-.search-box:focus-within {
-  border-color: #6366f1;
-  color: #94a3b8;
+.search-box svg {
+  position: absolute;
+  left: 10px;
+  color: #64748b;
+  pointer-events: none;
 }
 
 .search-input {
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #94a3b8;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 6px 12px 6px 32px;
+  color: #f1f5f9;
   font-size: 13px;
-  width: 160px;
-  font-family: inherit;
+  outline: none;
+  width: 180px;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: #6366f1;
+  width: 230px;
 }
 
 .search-input::placeholder {
   color: #475569;
 }
 
-/* User Menu & Dropdown */
+/* Cron Indicator & Popover */
+.cron-menu-wrap {
+  position: relative;
+}
+
+.cron-indicator-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cron-indicator-btn:hover {
+  border-color: #6366f1;
+  color: #f1f5f9;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.status-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-pulse-dot.ok {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+.status-pulse-dot.error {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+}
+
+.status-pulse-dot.pending {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.cron-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 310px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  box-shadow: 0 15px 30px -8px rgba(0, 0, 0, 0.5);
+  padding: 14px;
+  z-index: 200;
+}
+
+.cron-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #334155;
+}
+
+.cron-popover-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cron-status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.cron-ok {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+.cron-fail {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.cron-pending {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.cron-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+}
+
+.cron-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.cron-item-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.cron-item-val {
+  color: #cbd5e1;
+  text-align: right;
+}
+
+.cron-item-val.mono {
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.cron-message-box {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.cron-popover-footer {
+  padding-top: 8px;
+  border-top: 1px solid #334155;
+}
+
+.cron-popover-refresh-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cron-popover-refresh-btn:hover:not(:disabled) {
+  border-color: #6366f1;
+  color: #f1f5f9;
+}
+
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* User Menu */
 .user-menu-wrap {
   position: relative;
 }
 
 .topbar-avatar {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  border: none;
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: #ffffff;
+  border: 2px solid #334155;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: #ffffff;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+  transition: all 0.2s ease;
 }
 
 .topbar-avatar:hover {
+  border-color: #6366f1;
   transform: scale(1.05);
-  box-shadow: 0 0 14px rgba(99, 102, 241, 0.5);
 }
 
 .user-dropdown {
@@ -220,14 +482,14 @@ onUnmounted(() => {
   width: 220px;
   background: #1e293b;
   border: 1px solid #334155;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-  z-index: 100;
-  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 15px 30px -8px rgba(0, 0, 0, 0.5);
+  padding: 8px;
+  z-index: 200;
 }
 
 .user-dropdown-header {
-  padding: 12px 14px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -250,6 +512,7 @@ onUnmounted(() => {
 .user-dropdown-divider {
   height: 1px;
   background: #334155;
+  margin: 6px 0;
 }
 
 .dropdown-item {
@@ -257,19 +520,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 8px 10px;
   background: transparent;
   border: none;
-  color: #94a3b8;
+  border-radius: 6px;
+  color: #cbd5e1;
   font-size: 13px;
-  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
-  text-align: left;
 }
 
 .dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: #334155;
+  color: #f1f5f9;
 }
 
 .dropdown-item.logout {
@@ -277,15 +540,18 @@ onUnmounted(() => {
 }
 
 .dropdown-item.logout:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
 }
 
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+/* Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.15s ease;
 }
 
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
   transform: translateY(-4px);
 }

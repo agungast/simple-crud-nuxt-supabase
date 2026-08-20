@@ -187,60 +187,6 @@
         </TransitionGroup>
       </div>
     </div>
-
-    <!-- Cron Job Status Card -->
-    <div class="content-card cron-card">
-      <div class="card-header">
-        <div class="card-title-group">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <h2 class="card-title">Auto Cleanup (pg_cron)</h2>
-        </div>
-        <span
-          class="cron-status-badge"
-          :class="cronStatus ? (cronStatus.status === 'succeeded' ? 'cron-ok' : 'cron-fail') : 'cron-pending'"
-        >
-          {{ cronStatus ? (cronStatus.status === 'succeeded' ? '✓ Aktif' : '✗ Error') : '⏳ Belum berjalan' }}
-        </span>
-      </div>
-      <div class="card-body">
-        <div class="cron-info-grid">
-          <div class="cron-info-item">
-            <span class="cron-info-label">Fungsi</span>
-            <span class="cron-info-value">Hapus tugas selesai &gt; 30 hari</span>
-          </div>
-          <div class="cron-info-item">
-            <span class="cron-info-label">Jadwal</span>
-            <span class="cron-info-value mono">{{ cronStatus?.schedule ?? '0 17 * * *' }} <span class="cron-tz">(UTC)</span></span>
-          </div>
-          <div class="cron-info-item">
-            <span class="cron-info-label">Setara WIB</span>
-            <span class="cron-info-value">Setiap hari pukul 00:00</span>
-          </div>
-          <div class="cron-info-item">
-            <span class="cron-info-label">Terakhir berjalan</span>
-            <span class="cron-info-value">
-              {{ cronStatus?.last_run ? taskStore.formatCronTime(cronStatus.last_run) : 'Belum pernah berjalan' }}
-            </span>
-          </div>
-          <div v-if="cronStatus?.message" class="cron-info-item cron-info-full">
-            <span class="cron-info-label">Pesan</span>
-            <span class="cron-info-value mono cron-message">{{ cronStatus.message }}</span>
-          </div>
-        </div>
-        <button class="cron-refresh-btn" @click="taskStore.fetchCronStatus" :disabled="cronLoading">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="{ spinning: cronLoading }">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-          </svg>
-          {{ cronLoading ? 'Memuat...' : 'Refresh Status' }}
-        </button>
-      </div>
-    </div>
   </main>
 </template>
 
@@ -382,7 +328,7 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 360px 1fr;
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
 /* ─── CARD ────────────────────────────────────────────────────────────────── */
@@ -391,6 +337,8 @@ onUnmounted(() => {
   border: 1px solid #334155;
   border-radius: 14px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-header {
@@ -399,6 +347,7 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 18px 20px;
   border-bottom: 1px solid #334155;
+  flex-shrink: 0;
 }
 
 .card-title-group {
@@ -433,10 +382,16 @@ onUnmounted(() => {
 
 .card-body {
   padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-body.no-padding {
   padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ─── BACKUP MENU ─────────────────────────────────────────────────────────── */

@@ -19,7 +19,7 @@
     <p class="empty-desc">Tambahkan tugas pertama Anda menggunakan form di samping.</p>
   </div>
 
-  <!-- Daftar Tugas -->
+  <!-- Daftar Tugas dengan Paginasi -->
   <div v-else class="table-wrapper">
     <table class="data-table">
       <thead>
@@ -33,10 +33,10 @@
       </thead>
       <tbody>
         <TaskItem
-          v-for="(task, index) in tasks"
+          v-for="(task, index) in paginatedTasks"
           :key="task.id"
           :task="task"
-          :index="index + 1"
+          :index="(currentPage - 1) * pageSize + index + 1"
           @toggle="emit('toggle', $event)"
           @delete="emit('delete', $event)"
           @edit="emit('edit', $event)"
@@ -45,14 +45,56 @@
       </tbody>
     </table>
 
-    <!-- Table Footer -->
+    <!-- Table Footer with Pagination Controls -->
     <div class="table-footer">
-      <span class="footer-info">
-        Menampilkan {{ tasks.length }} dari {{ tasks.length }} tugas
-      </span>
-      <div class="footer-stats">
-        <span class="stat-pill done">{{ completedCount }} Selesai</span>
-        <span class="stat-pill active">{{ activeCount }} Aktif</span>
+      <div class="footer-left">
+        <span class="footer-info">
+          Menampilkan <strong class="text-highlight">{{ itemRangeStart }}–{{ itemRangeEnd }}</strong> dari <strong class="text-highlight">{{ tasks.length }}</strong> tugas
+        </span>
+        <div class="footer-stats">
+          <span class="stat-pill done">{{ completedCount }} Selesai</span>
+          <span class="stat-pill active">{{ activeCount }} Aktif</span>
+        </div>
+      </div>
+
+      <!-- Pagination Navigation Buttons -->
+      <div v-if="totalPages > 1" class="pagination-controls">
+        <!-- Tombol Prev -->
+        <button
+          class="page-nav-btn"
+          :disabled="currentPage === 1"
+          @click="goToPage(currentPage - 1)"
+          title="Halaman Sebelumnya"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <!-- Nomor Halaman -->
+        <div class="page-numbers">
+          <button
+            v-for="page in totalPages"
+            :key="page"
+            class="page-num-btn"
+            :class="{ active: page === currentPage }"
+            @click="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+        </div>
+
+        <!-- Tombol Next -->
+        <button
+          class="page-nav-btn"
+          :disabled="currentPage === totalPages"
+          @click="goToPage(currentPage + 1)"
+          title="Halaman Berikutnya"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -67,13 +109,51 @@ const props = defineProps<{
   pending?: boolean
 }>()
 
-// Emits — diteruskan dari TaskItem ke parent (app.vue)
+// Emits
 const emit = defineEmits<{
   (e: 'toggle', task: Task): void
   (e: 'delete', task: Task): void
   (e: 'edit', payload: { task: Task; newName: string }): void
   (e: 'open-lightbox', url: string): void
 }>()
+
+// ─── PAGINATION LOGIC ─────────────────────────────────────────────────────────
+const pageSize = 5
+const currentPage = ref<number>(1)
+
+const totalPages = computed<number>(() => {
+  return Math.ceil(props.tasks.length / pageSize) || 1
+})
+
+const paginatedTasks = computed<Task[]>(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return props.tasks.slice(start, start + pageSize)
+})
+
+const itemRangeStart = computed<number>(() => {
+  if (props.tasks.length === 0) return 0
+  return (currentPage.value - 1) * pageSize + 1
+})
+
+const itemRangeEnd = computed<number>(() => {
+  return Math.min(currentPage.value * pageSize, props.tasks.length)
+})
+
+const goToPage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
+
+// Watcher untuk mereset atau menyesuaikan halaman jika data berkurang
+watch(
+  () => props.tasks.length,
+  () => {
+    if (currentPage.value > totalPages.value) {
+      currentPage.value = Math.max(1, totalPages.value)
+    }
+  }
+)
 
 // Computed stats
 const completedCount = computed<number>(() => props.tasks.filter((t: Task) => t.is_completed).length)
@@ -84,12 +164,15 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 /* Loading */
 .table-status {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 10px;
   color: #64748b;
   font-size: 14px;
-  padding: 48px 24px;
+  padding: 32px 24px;
+  min-height: 380px;
+  flex: 1;
 }
 
 .pulse-spinner {
@@ -110,9 +193,12 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 48px 24px;
+  justify-content: center;
+  padding: 32px 24px;
   text-align: center;
   gap: 8px;
+  min-height: 380px;
+  flex: 1;
 }
 
 .empty-icon {
@@ -144,6 +230,11 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 /* Table */
 .table-wrapper {
   overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 380px;
+  flex: 1;
 }
 
 .data-table {
@@ -154,6 +245,11 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 
 .data-table thead tr {
   border-bottom: 1px solid #334155;
+  height: 42px;
+}
+
+.data-table tbody tr {
+  height: 56px;
 }
 
 .data-table th {
@@ -171,7 +267,7 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 .col-no     { width: 48px; }
 .col-task   { min-width: 180px; }
 .col-status { width: 110px; }
-.col-img    { width: 80px; }
+.col-img    { width: 110px; }
 .col-action { width: 80px; text-align: center; }
 
 /* Table Footer */
@@ -181,12 +277,26 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   justify-content: space-between;
   padding: 12px 16px;
   border-top: 1px solid #334155;
-  background: rgba(15, 23, 42, 0.2);
+  background: rgba(15, 23, 42, 0.25);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .footer-info {
   font-size: 12px;
-  color: #475569;
+  color: #64748b;
+}
+
+.text-highlight {
+  color: #cbd5e1;
+  font-weight: 600;
 }
 
 .footer-stats {
@@ -197,17 +307,85 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 .stat-pill {
   font-size: 11px;
   font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
+  padding: 2px 8px;
+  border-radius: 12px;
 }
 
 .stat-pill.done {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(34, 197, 94, 0.12);
   color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
 }
 
 .stat-pill.active {
-  background: rgba(251, 146, 60, 0.1);
+  background: rgba(251, 146, 60, 0.12);
   color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.25);
+}
+
+/* Pagination Controls */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.page-nav-btn:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: #6366f1;
+  color: #ffffff;
+}
+
+.page-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-num-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.page-num-btn:hover:not(.active) {
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.page-num-btn.active {
+  background: #6366f1;
+  border-color: #818cf8;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
 }
 </style>

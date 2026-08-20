@@ -106,7 +106,7 @@
       <!-- Submit Button -->
       <button type="submit" class="auth-submit-btn" :disabled="authStore.loading || !form.email || !form.password">
         <span v-if="authStore.loading" class="spinner"></span>
-        <span>{{ authStore.loading ? 'Sedang Masuk...' : 'Masuk Sekarang' }}</span>
+        <span>{{ authStore.loading ? 'Memuat...' : 'Masuk Sekarang' }}</span>
       </button>
     </form>
 

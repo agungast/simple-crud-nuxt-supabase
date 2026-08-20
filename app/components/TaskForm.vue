@@ -1,134 +1,139 @@
 <template>
   <form @submit.prevent="handleSubmit" class="task-form">
-    <!-- Input Teks Tugas -->
-    <div class="form-field">
-      <label class="form-label">Nama Tugas <span class="required">*</span></label>
-      <div class="input-wrapper">
-        <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="8" y1="6" x2="21" y2="6"></line>
-          <line x1="8" y1="12" x2="21" y2="12"></line>
-          <line x1="8" y1="18" x2="21" y2="18"></line>
-          <line x1="3" y1="6" x2="3.01" y2="6"></line>
-          <line x1="3" y1="12" x2="3.01" y2="12"></line>
-          <line x1="3" y1="18" x2="3.01" y2="18"></line>
-        </svg>
-        <input
-          v-model="localTaskText"
-          type="text"
-          placeholder="Deskripsikan tugas Anda..."
-          required
-          class="text-input"
-          :disabled="uploading"
-        />
-      </div>
-    </div>
-
-    <!-- Multiple Files Uploader -->
-    <div class="form-field">
-      <div class="label-row">
-        <label class="form-label">Lampiran Media & Dokumen <span class="optional">(Opsional)</span></label>
-        <span v-if="selectedFiles.length > 0" class="files-count-badge">
-          {{ selectedFiles.length }} file dipilih
-        </span>
-      </div>
-
-      <!-- Drag and Drop Upload Area -->
-      <label
-        class="upload-area"
-        :class="{ 'is-dragging': isDragging }"
-        @dragover.prevent="isDragging = true"
-        @dragleave.prevent="isDragging = false"
-        @drop.prevent="onFileDrop"
-      >
-        <input
-          type="file"
-          multiple
-          accept="image/*,.pdf,.doc,.docx,.txt,.zip"
-          class="hidden-file-input"
-          @change="onFileInputChange"
-          :disabled="uploading"
-        />
-        <div class="upload-inner">
-          <div class="upload-icon-wrap">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-            </svg>
-          </div>
-          <div>
-            <p class="upload-title">Seret atau Klik untuk Upload File</p>
-            <p class="upload-hint">Mendukung banyak Gambar (PNG, JPG), PDF, Dokumen hingga 15MB</p>
-          </div>
+    <div class="form-fields-wrapper">
+      <!-- Input Teks Tugas -->
+      <div class="form-field">
+        <label class="form-label">Nama Tugas <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          <input
+            v-model="localTaskText"
+            type="text"
+            placeholder="Deskripsikan tugas Anda..."
+            required
+            class="text-input"
+            :disabled="uploading"
+          />
         </div>
-      </label>
+      </div>
 
-      <!-- Selected Files Preview List -->
-      <div v-if="selectedFiles.length > 0" class="selected-files-grid">
-        <div
-          v-for="(item, index) in selectedFiles"
-          :key="item.id"
-          class="file-card"
-          :class="{ 'is-private-card': item.isPrivate }"
+      <!-- Multiple Files Uploader -->
+      <div class="form-field">
+        <div class="label-row">
+          <label class="form-label">Lampiran Media & Dokumen <span class="optional">(Opsional)</span></label>
+          <span v-if="selectedFiles.length > 0" class="files-count-badge">
+            {{ selectedFiles.length }} file dipilih
+          </span>
+        </div>
+
+        <!-- Drag and Drop Upload Area -->
+        <label
+          class="upload-area"
+          :class="{ 'is-dragging': isDragging }"
+          @dragover.prevent="isDragging = true"
+          @dragleave.prevent="isDragging = false"
+          @drop.prevent="onFileDrop"
         >
-          <!-- Thumbnail / Icon -->
-          <div class="file-thumb">
-            <img v-if="item.previewUrl" :src="item.previewUrl" :alt="item.name" class="thumb-img" />
-            <div v-else class="doc-icon" :class="getDocClass(item.name)">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
+          <input
+            type="file"
+            multiple
+            accept="image/*,.pdf,.doc,.docx,.txt,.zip"
+            class="hidden-file-input"
+            @change="onFileInputChange"
+            :disabled="uploading"
+          />
+          <div class="upload-inner">
+            <div class="upload-icon-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
               </svg>
-              <span class="file-ext">{{ getExt(item.name) }}</span>
+            </div>
+            <div>
+              <p class="upload-title">Seret atau Klik untuk Upload File</p>
+              <p class="upload-hint">Mendukung banyak Gambar (PNG, JPG), PDF, Dokumen hingga 15MB</p>
             </div>
           </div>
+        </label>
 
-          <!-- File Info -->
-          <div class="file-details">
-            <p class="file-name" :title="item.name">{{ item.name }}</p>
-            <span class="file-size">{{ formatSize(item.size) }}</span>
-          </div>
+        <!-- Selected Files Preview List -->
+        <div v-if="selectedFiles.length > 0" class="selected-files-grid">
+          <div
+            v-for="(item, index) in selectedFiles"
+            :key="item.id"
+            class="file-card"
+            :class="{ 'is-private-card': item.isPrivate }"
+          >
+            <!-- Thumbnail / Icon -->
+            <div class="file-thumb">
+              <img v-if="item.previewUrl" :src="item.previewUrl" :alt="item.name" class="thumb-img" />
+              <div v-else class="doc-icon" :class="getDocClass(item.name)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <span class="file-ext">{{ getExt(item.name) }}</span>
+              </div>
+            </div>
 
-          <!-- Privacy Toggle & Remove -->
-          <div class="file-options">
-            <label class="private-toggle" title="File privat hanya bisa diakses via Signed URL">
-              <input type="checkbox" v-model="item.isPrivate" :disabled="uploading" />
-              <span class="private-label">Privat</span>
-            </label>
+            <!-- File Info -->
+            <div class="file-details">
+              <p class="file-name" :title="item.name">{{ item.name }}</p>
+              <span class="file-size">{{ formatSize(item.size) }}</span>
+            </div>
 
-            <button
-              type="button"
-              class="file-remove-btn"
-              @click="removeFile(index)"
-              :disabled="uploading"
-              title="Hapus File"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
+            <!-- Privacy Toggle & Remove -->
+            <div class="file-options">
+              <label class="private-toggle" title="File privat hanya bisa diakses via Signed URL">
+                <input type="checkbox" v-model="item.isPrivate" :disabled="uploading" />
+                <span class="private-label">Privat</span>
+              </label>
+
+              <button
+                type="button"
+                class="file-remove-btn"
+                @click="removeFile(index)"
+                :disabled="uploading"
+                title="Hapus File"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Divider -->
-    <div class="form-divider"></div>
+    <!-- Bottom Action Group -->
+    <div class="form-bottom-actions">
+      <!-- Divider -->
+      <div class="form-divider"></div>
 
-    <!-- Tombol Submit -->
-    <button type="submit" class="submit-btn" :disabled="uploading || !localTaskText.trim()">
-      <span v-if="uploading" class="spinner-container">
-        <span class="spinner"></span>
-        <span>Mengunggah & Menyimpan...</span>
-      </span>
-      <span v-else class="btn-content">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="16"></line>
-          <line x1="8" y1="12" x2="16" y2="12"></line>
-        </svg>
-        <span>Tambah Tugas</span>
-      </span>
-    </button>
+      <!-- Tombol Submit -->
+      <button type="submit" class="submit-btn" :disabled="uploading || !localTaskText.trim()">
+        <span v-if="uploading" class="spinner-container">
+          <span class="spinner"></span>
+          <span>Mengunggah & Menyimpan...</span>
+        </span>
+        <span v-else class="btn-content">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>Tambah Tugas</span>
+        </span>
+      </button>
+    </div>
   </form>
 </template>
 
@@ -235,7 +240,24 @@ defineExpose({
 .task-form {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  min-height: 380px;
+  flex: 1;
+}
+
+.form-fields-wrapper {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
+}
+
+.form-bottom-actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
 }
 
 .form-field {
