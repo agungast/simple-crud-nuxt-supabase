@@ -124,39 +124,38 @@
   </Teleport>
 </template>
 
-<script setup>
-import { ref, nextTick } from 'vue'
+<script setup lang="ts">
+import type { Task } from '~/types/task'
 
 // Props
-const props = defineProps({
-  task: {
-    type: Object,
-    required: true
-  },
-  index: {
-    type: Number,
-    required: true
-  }
-})
+const props = defineProps<{
+  task: Task
+  index: number
+}>()
 
 // Emits
-const emit = defineEmits(['toggle', 'delete', 'edit', 'open-lightbox'])
+const emit = defineEmits<{
+  (e: 'toggle', task: Task): void
+  (e: 'delete', task: Task): void
+  (e: 'edit', payload: { task: Task; newName: string }): void
+  (e: 'open-lightbox', url: string): void
+}>()
 
 // ─── Konfirmasi Hapus ─────────────────────────────────────────────────────────
-const showConfirm = ref(false)
+const showConfirm = ref<boolean>(false)
 
-const confirmDelete = () => {
+const confirmDelete = (): void => {
   emit('delete', props.task)
   showConfirm.value = false
 }
 
 // ─── Edit Nama Tugas ──────────────────────────────────────────────────────────
-const showEdit = ref(false)
-const editText = ref('')
-const editError = ref('')
-const editInputRef = ref(null)
+const showEdit = ref<boolean>(false)
+const editText = ref<string>('')
+const editError = ref<string>('')
+const editInputRef = ref<HTMLInputElement | null>(null)
 
-const openEdit = async () => {
+const openEdit = async (): Promise<void> => {
   editText.value = props.task.task
   editError.value = ''
   showEdit.value = true
@@ -166,7 +165,7 @@ const openEdit = async () => {
   editInputRef.value?.select()
 }
 
-const confirmEdit = () => {
+const confirmEdit = (): void => {
   const trimmed = editText.value.trim()
   if (!trimmed) {
     editError.value = 'Nama tugas tidak boleh kosong.'

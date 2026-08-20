@@ -89,28 +89,28 @@
   </form>
 </template>
 
-<script setup>
-import { ref } from 'vue'
+<script setup lang="ts">
+import type { TaskFormSubmitPayload } from '~/types/task'
 
 // Props
-const props = defineProps({
-  uploading: {
-    type: Boolean,
-    default: false
-  }
-})
+const props = defineProps<{
+  uploading?: boolean
+}>()
 
 // Emits
-const emit = defineEmits(['submit'])
+const emit = defineEmits<{
+  (e: 'submit', payload: TaskFormSubmitPayload): void
+}>()
 
 // State lokal form
-const localTaskText = ref('')
-const selectedFile = ref(null)
-const previewUrl = ref(null)
+const localTaskText = ref<string>('')
+const selectedFile = ref<File | null>(null)
+const previewUrl = ref<string | null>(null)
 
 // Handle pilihan file gambar
-const onFileChange = (event) => {
-  const file = event.target.files[0]
+const onFileChange = (event: Event): void => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
   if (!file) return
 
   selectedFile.value = file
@@ -123,7 +123,7 @@ const onFileChange = (event) => {
 }
 
 // Hapus file gambar yang terpilih
-const removeFile = () => {
+const removeFile = (): void => {
   selectedFile.value = null
   if (previewUrl.value) {
     URL.revokeObjectURL(previewUrl.value)
@@ -132,13 +132,13 @@ const removeFile = () => {
 }
 
 // Reset form setelah submit berhasil (dipanggil dari parent via expose)
-const resetForm = () => {
+const resetForm = (): void => {
   localTaskText.value = ''
   removeFile()
 }
 
 // Handle submit: emit data ke parent
-const handleSubmit = () => {
+const handleSubmit = (): void => {
   if (!localTaskText.value.trim()) return
   emit('submit', {
     taskText: localTaskText.value,

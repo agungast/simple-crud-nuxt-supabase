@@ -34,8 +34,10 @@
   </header>
 </template>
 
-<script setup>
-const emit = defineEmits(['toggle-sidebar'])
+<script setup lang="ts">
+const emit = defineEmits<{
+  (e: 'toggle-sidebar'): void
+}>()
 </script>
 
 <style scoped>

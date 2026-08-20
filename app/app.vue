@@ -167,7 +167,7 @@
                 <div class="backup-menu-wrap" ref="backupMenuRef">
                   <button
                     class="backup-btn"
-                    @click="toggleBackupMenu"
+                    @click="taskStore.toggleBackupMenu"
                     :disabled="backupLoading"
                     title="Download Backup CSV"
                   >
@@ -194,7 +194,7 @@
                         v-for="file in latestBackups"
                         :key="file.name"
                         class="backup-item"
-                        @click="downloadBackup(file.name)"
+                        @click="taskStore.downloadBackup(file.name)"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -202,7 +202,7 @@
                         </svg>
                         <div class="backup-item-info">
                           <span class="backup-item-name">{{ file.name }}</span>
-                          <span class="backup-item-meta">{{ formatBackupDate(file.created_at) }} · {{ formatFileSize(file.size_bytes) }}</span>
+                          <span class="backup-item-meta">{{ taskStore.formatBackupDate(file.created_at) }} · {{ taskStore.formatFileSize(file.size_bytes) }}</span>
                         </div>
                         <svg class="backup-item-dl" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -219,10 +219,10 @@
               <TaskList
                 :tasks="tasks"
                 :pending="pending"
-                @toggle="toggleTask"
-                @delete="deleteTask"
-                @edit="editTask"
-                @open-lightbox="openLightbox"
+                @toggle="handleToggleTask"
+                @delete="handleDeleteTask"
+                @edit="handleEditTask"
+                @open-lightbox="taskStore.openLightbox"
               />
             </div>
           </div>
@@ -298,7 +298,7 @@
               <div class="cron-info-item">
                 <span class="cron-info-label">Terakhir berjalan</span>
                 <span class="cron-info-value">
-                  {{ cronStatus?.last_run ? formatCronTime(cronStatus.last_run) : 'Belum pernah berjalan' }}
+                  {{ cronStatus?.last_run ? taskStore.formatCronTime(cronStatus.last_run) : 'Belum pernah berjalan' }}
                 </span>
               </div>
               <div v-if="cronStatus?.message" class="cron-info-item cron-info-full">
@@ -306,7 +306,7 @@
                 <span class="cron-info-value mono cron-message">{{ cronStatus.message }}</span>
               </div>
             </div>
-            <button class="cron-refresh-btn" @click="fetchCronStatus" :disabled="cronLoading">
+            <button class="cron-refresh-btn" @click="taskStore.fetchCronStatus" :disabled="cronLoading">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="{ spinning: cronLoading }">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
@@ -319,332 +319,85 @@
     </div>
 
     <!-- Modal Lightbox Gambar -->
-    <ImageLightbox :image-url="lightboxImage" @close="closeLightbox" />
+    <ImageLightbox :image-url="lightboxImage" @close="taskStore.closeLightbox" />
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+<script setup lang="ts">
+import { useTaskStore } from '~/stores/taskStore'
+import type { Task, TaskFormSubmitPayload } from '~/types/task'
 
-const supabase = useSupabaseClient()
+// ─── Pinia Store ────────────────────────────────────────────────────────────
+const taskStore = useTaskStore()
+const {
+  tasks,
+  pending,
+  uploading,
+  sidebarCollapsed,
+  lightboxImage,
+  latestBackups,
+  backupLoading,
+  showBackupMenu,
+  activityLogs,
+  isRealtimeConnected,
+  cronStatus,
+  cronLoading,
+  completedCount,
+  activeCount,
+  progressPercent
+} = storeToRefs(taskStore)
 
-// ─── State Global ─────────────────────────────────────────────────────────────
-const tasks = ref([])
-const pending = ref(false)
-const uploading = ref(false)
-const lightboxImage = ref(null)
-const taskFormRef = ref(null)
-const sidebarCollapsed = ref(false)
+// ─── Template Refs ──────────────────────────────────────────────────────────
+const taskFormRef = ref<{ resetForm: () => void } | null>(null)
+const backupMenuRef = ref<HTMLDivElement | null>(null)
 
-// ─── Backup Download ──────────────────────────────────────────────────────────
-const latestBackups = ref([])
-const backupLoading = ref(false)
-const showBackupMenu = ref(false)
-const backupMenuRef = ref(null)
-
-const toggleBackupMenu = async () => {
-  showBackupMenu.value = !showBackupMenu.value
-  if (showBackupMenu.value) {
-    await fetchLatestBackups()
+// ─── Event Handlers (delegasi ke store) ─────────────────────────────────────
+const handleFormSubmit = async (payload: TaskFormSubmitPayload): Promise<void> => {
+  await taskStore.addTask(payload.taskText, payload.selectedFile)
+  // Reset form jika berhasil (uploading sudah false = tidak ada error)
+  if (!taskStore.uploading) {
+    taskFormRef.value?.resetForm()
   }
 }
 
-const fetchLatestBackups = async () => {
-  backupLoading.value = true
-  try {
-    const { data, error } = await supabase.rpc('list_backup_files')
-    if (!error && data) {
-      latestBackups.value = data
-    } else if (error) {
-      console.warn('[Backup] list_backup_files belum tersedia:', error.message)
-    }
-  } catch (err) {
-    console.warn('[Backup] Gagal memuat daftar backup:', err)
-  } finally {
-    backupLoading.value = false
+const handleToggleTask = (task: Task): void => {
+  taskStore.toggleTask(task)
+}
+
+const handleEditTask = ({ task, newName }: { task: Task; newName: string }): void => {
+  taskStore.editTask(task, newName)
+}
+
+const handleDeleteTask = (task: Task): void => {
+  taskStore.deleteTask(task)
+}
+
+// ─── Tutup dropdown backup jika klik di luar ───────────────────────────────
+const handleOutsideClick = (e: MouseEvent): void => {
+  if (backupMenuRef.value && !backupMenuRef.value.contains(e.target as Node)) {
+    taskStore.closeBackupMenu()
   }
 }
 
-const downloadBackup = async (fileName) => {
-  const { data, error } = await supabase.storage
-    .from('backups')
-    .download(fileName)
-
-  if (error) {
-    alert('Gagal mengunduh file: ' + error.message)
-    return
-  }
-
-  // Trigger download di browser
-  const url = URL.createObjectURL(data)
-  const a   = document.createElement('a')
-  a.href    = url
-  a.download = fileName
-  a.click()
-  URL.revokeObjectURL(url)
-  showBackupMenu.value = false
-}
-
-const formatBackupDate = (iso) => {
-  if (!iso) return '-'
-  return new Date(iso).toLocaleDateString('id-ID', {
-    day: '2-digit', month: 'short', year: 'numeric'
-  })
-}
-
-const formatFileSize = (bytes) => {
-  if (!bytes) return '-'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-// Tutup dropdown jika klik di luar
-const handleOutsideClick = (e) => {
-  if (backupMenuRef.value && !backupMenuRef.value.contains(e.target)) {
-    showBackupMenu.value = false
-  }
-}
-
-// ─── Activity Log ─────────────────────────────────────────────────────────────
-const activityLogs = ref([])
-const isRealtimeConnected = ref(false)
-let logIdCounter = 0
-
-// ─── Cron Job Status ──────────────────────────────────────────────────────────
-const cronStatus = ref(null)
-const cronLoading = ref(false)
-
-const fetchCronStatus = async () => {
-  cronLoading.value = true
-  try {
-    const { data, error } = await supabase.rpc('get_cron_status')
-    if (error) {
-      // RPC belum ada (SQL belum dijalankan) — abaikan tanpa crash
-      console.warn('[Cron] get_cron_status belum tersedia:', error.message)
-    } else if (data && data.length > 0) {
-      cronStatus.value = data[0]
-    }
-  } catch (err) {
-    console.warn('[Cron] Gagal mengambil status:', err)
-  } finally {
-    cronLoading.value = false
-  }
-}
-
-const formatCronTime = (isoString) => {
-  if (!isoString) return '-'
-  return new Date(isoString).toLocaleString('id-ID', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  })
-}
-
-const addLog = (eventType, taskName) => {
-  const now = new Date()
-  const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-  activityLogs.value.unshift({
-    id: ++logIdCounter,
-    type: eventType,
-    task: taskName,
-    time
-  })
-  // Batasi log hanya 20 entri terakhir
-  if (activityLogs.value.length > 20) {
-    activityLogs.value.pop()
-  }
-}
-
-// ─── Computed Stats ───────────────────────────────────────────────────────────
-const completedCount = computed(() => tasks.value.filter(t => t.is_completed).length)
-const activeCount = computed(() => tasks.value.filter(t => !t.is_completed).length)
-const progressPercent = computed(() => {
-  if (tasks.value.length === 0) return 0
-  return Math.round((completedCount.value / tasks.value.length) * 100)
-})
-
-// ─── READ (initial fetch) ─────────────────────────────────────────────────────
-const fetchTasks = async () => {
-  pending.value = true
-  const { data, error } = await supabase
-    .from('todos')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) console.error('Error fetching tasks:', error)
-  else tasks.value = data ?? []
-
-  pending.value = false
-}
-
-// ─── REALTIME SUBSCRIPTION ────────────────────────────────────────────────────
-let realtimeChannel
-
+// ─── Lifecycle ──────────────────────────────────────────────────────────────
 onMounted(async () => {
   // 1. Ambil data awal
-  await fetchTasks()
+  await taskStore.fetchTasks()
 
   // 2. Ambil status cron job
-  await fetchCronStatus()
+  await taskStore.fetchCronStatus()
 
   // 3. Listener tutup dropdown backup
   document.addEventListener('click', handleOutsideClick)
 
   // 4. Buat koneksi Realtime
-  realtimeChannel = supabase
-    .channel('pantau-tugas')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'todos' },
-      (payload) => {
-        console.log('[Realtime] Event:', payload.eventType, payload)
-
-        if (payload.eventType === 'INSERT') {
-          tasks.value.unshift(payload.new)
-          addLog('INSERT', payload.new.task)
-        }
-        else if (payload.eventType === 'DELETE') {
-          tasks.value = tasks.value.filter(t => t.id !== payload.old.id)
-          addLog('DELETE', payload.old.task ?? 'Tugas dihapus')
-        }
-        else if (payload.eventType === 'UPDATE') {
-          const idx = tasks.value.findIndex(t => t.id === payload.new.id)
-          if (idx !== -1) {
-            tasks.value[idx] = payload.new
-          }
-          addLog('UPDATE', payload.new.task)
-        }
-      }
-    )
-    .subscribe((status) => {
-      isRealtimeConnected.value = status === 'SUBSCRIBED'
-      console.log('[Realtime] Status:', status)
-    })
+  taskStore.initRealtime()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
-  if (realtimeChannel) {
-    supabase.removeChannel(realtimeChannel)
-  }
+  taskStore.cleanupRealtime()
 })
-
-// ─── UPLOAD GAMBAR ────────────────────────────────────────────────────────────
-const uploadImage = async (file) => {
-  const fileExt = file.name.split('.').pop()
-  const randomName = Math.random().toString(36).substring(2, 10)
-  const fileName = `${Date.now()}_${randomName}.${fileExt}`
-
-  const { error } = await supabase.storage
-    .from('project-crud')
-    .upload(`public/${fileName}`, file, { cacheControl: '3600', upsert: false })
-
-  if (error) {
-    console.error('Error uploading image:', error)
-    return { error }
-  }
-
-  const { data: publicUrlData } = supabase.storage
-    .from('project-crud')
-    .getPublicUrl(`public/${fileName}`)
-
-  return { url: publicUrlData.publicUrl, fileName }
-}
-
-// ─── CREATE ───────────────────────────────────────────────────────────────────
-// Realtime INSERT event akan memperbarui tasks[] secara otomatis
-const handleFormSubmit = async ({ taskText, selectedFile }) => {
-  uploading.value = true
-  let imageUrl = null
-
-  try {
-    if (selectedFile) {
-      const { url, error } = await uploadImage(selectedFile)
-      if (error) {
-        alert('Gagal mengunggah gambar: ' + error.message)
-        return
-      }
-      imageUrl = url
-    }
-
-    const { error } = await supabase
-      .from('todos')
-      .insert([{ task: taskText, is_completed: false, image_url: imageUrl }])
-
-    if (error) {
-      console.error('Error inserting task:', error)
-      alert('Gagal menambahkan tugas: ' + error.message)
-    } else {
-      taskFormRef.value?.resetForm()
-      // Tidak perlu fetchTasks() — Realtime INSERT akan update tasks[]
-    }
-  } catch (err) {
-    console.error('Unexpected error:', err)
-  } finally {
-    uploading.value = false
-  }
-}
-
-// ─── UPDATE (toggle status) ───────────────────────────────────────────────────────────────────
-// Realtime UPDATE event akan memperbarui tasks[] secara otomatis
-const toggleTask = async (task) => {
-  const { error } = await supabase
-    .from('todos')
-    .update({ is_completed: !task.is_completed })
-    .eq('id', task.id)
-
-  if (error) console.error('Error toggling task:', error)
-  // Tidak perlu fetchTasks() — Realtime UPDATE akan update tasks[]
-}
-
-// ─── UPDATE (edit nama) ───────────────────────────────────────────────────────────────────
-// Realtime UPDATE event akan memperbarui tasks[] secara otomatis
-const editTask = async ({ task, newName }) => {
-  const { error } = await supabase
-    .from('todos')
-    .update({ task: newName })
-    .eq('id', task.id)
-
-  if (error) {
-    console.error('Error editing task:', error)
-    alert('Gagal mengubah nama tugas: ' + error.message)
-  }
-  // Tidak perlu fetchTasks() — Realtime UPDATE akan update tasks[]
-}
-
-// ─── DELETE ───────────────────────────────────────────────────────────────────
-// Realtime DELETE event akan memperbarui tasks[] secara otomatis
-const deleteTask = async (task) => {
-  const { error } = await supabase
-    .from('todos')
-    .delete()
-    .eq('id', task.id)
-
-  if (error) {
-    console.error('Error deleting task:', error)
-    alert('Gagal menghapus tugas: ' + error.message)
-    return
-  }
-
-  if (task.image_url) {
-    try {
-      const parts = task.image_url.split('/')
-      const fileName = parts[parts.length - 1]
-      const { error: storageError } = await supabase.storage
-        .from('project-crud')
-        .remove([`public/${fileName}`])
-
-      if (storageError) console.error('Error deleting image from storage:', storageError)
-    } catch (err) {
-      console.error('Error parsing image URL:', err)
-    }
-  }
-  // Tidak perlu fetchTasks() — Realtime DELETE akan update tasks[]
-}
-
-// ─── LIGHTBOX ─────────────────────────────────────────────────────────────────
-const openLightbox = (url) => { lightboxImage.value = url }
-const closeLightbox = () => { lightboxImage.value = null }
 </script>
 
 <style>

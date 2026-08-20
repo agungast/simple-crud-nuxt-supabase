@@ -58,28 +58,26 @@
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue'
+<script setup lang="ts">
+import type { Task } from '~/types/task'
 
 // Props
-const props = defineProps({
-  tasks: {
-    type: Array,
-    required: true,
-    default: () => []
-  },
-  pending: {
-    type: Boolean,
-    default: false
-  }
-})
+const props = defineProps<{
+  tasks: Task[]
+  pending?: boolean
+}>()
 
 // Emits — diteruskan dari TaskItem ke parent (app.vue)
-const emit = defineEmits(['toggle', 'delete', 'edit', 'open-lightbox'])
+const emit = defineEmits<{
+  (e: 'toggle', task: Task): void
+  (e: 'delete', task: Task): void
+  (e: 'edit', payload: { task: Task; newName: string }): void
+  (e: 'open-lightbox', url: string): void
+}>()
 
 // Computed stats
-const completedCount = computed(() => props.tasks.filter(t => t.is_completed).length)
-const activeCount = computed(() => props.tasks.filter(t => !t.is_completed).length)
+const completedCount = computed<number>(() => props.tasks.filter((t: Task) => t.is_completed).length)
+const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is_completed).length)
 </script>
 
 <style scoped>

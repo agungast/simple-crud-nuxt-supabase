@@ -18,17 +18,16 @@
   </Teleport>
 </template>
 
-<script setup>
+<script setup lang="ts">
 // Props
-defineProps({
-  imageUrl: {
-    type: String,
-    default: null
-  }
-})
+defineProps<{
+  imageUrl: string | null
+}>()
 
 // Emits
-const emit = defineEmits(['close'])
+const emit = defineEmits<{
+  (e: 'close'): void
+}>()
 </script>
 
 <style scoped>
