@@ -56,7 +56,13 @@
       </div>
     </div>
 
-    <!-- Form + Task List -->
+    <!-- Live Typing Notification Bar -->
+    <LiveTypingIndicator />
+
+    <!-- Live Cursors Overlay -->
+    <LiveCursors />
+
+    <!-- Form + Task List / Kanban -->
     <div class="content-grid">
       <!-- Card: Tambah Tugas -->
       <div class="content-card form-card">
@@ -75,7 +81,7 @@
         </div>
       </div>
 
-      <!-- Card: Daftar Tugas -->
+      <!-- Card: Daftar Tugas / Kanban -->
       <div class="content-card table-card">
         <div class="card-header">
           <div class="card-title-group">
@@ -85,9 +91,41 @@
               <line x1="3" y1="15" x2="21" y2="15"></line>
               <line x1="9" y1="9" x2="9" y2="21"></line>
             </svg>
-            <h2 class="card-title">Daftar Tugas Anda</h2>
+            <h2 class="card-title">
+              {{ collaborationStore.viewMode === 'table' ? 'Daftar Tugas Anda' : 'Papan Kanban Tugas' }}
+            </h2>
           </div>
           <div class="card-header-actions">
+            <!-- View Switcher (Tabel / Kanban) -->
+            <div class="view-switcher-pill">
+              <button
+                class="view-switch-btn"
+                :class="{ active: collaborationStore.viewMode === 'table' }"
+                @click="collaborationStore.setViewMode('table')"
+                title="Tampilan Tabel"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="3" y1="9" x2="21" y2="9"></line>
+                  <line x1="3" y1="15" x2="21" y2="15"></line>
+                  <line x1="9" y1="9" x2="9" y2="21"></line>
+                </svg>
+                <span>Tabel</span>
+              </button>
+              <button
+                class="view-switch-btn"
+                :class="{ active: collaborationStore.viewMode === 'kanban' }"
+                @click="collaborationStore.setViewMode('kanban')"
+                title="Tampilan Kanban Board"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="3" width="6" height="18" rx="1"></rect>
+                  <rect x="14" y="3" width="6" height="12" rx="1"></rect>
+                </svg>
+                <span>Kanban</span>
+              </button>
+            </div>
+
             <span class="card-badge">{{ tasks.length }} tugas</span>
             <!-- Tombol Download Backup -->
             <div class="backup-menu-wrap" ref="backupMenuRef">
@@ -141,14 +179,20 @@
             </div>
           </div>
         </div>
-        <div class="card-body no-padding">
+        <div class="card-body" :class="{ 'no-padding': collaborationStore.viewMode === 'table' }">
           <TaskList
+            v-if="collaborationStore.viewMode === 'table'"
             :tasks="tasks"
             :pending="pending"
             @toggle="handleToggleTask"
             @delete="handleDeleteTask"
             @edit="handleEditTask"
             @open-lightbox="taskStore.openLightbox"
+          />
+          <KanbanBoard
+            v-else
+            :tasks="tasks"
+            :loading="pending"
           />
         </div>
       </div>
@@ -192,10 +236,12 @@
 
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/taskStore'
+import { useCollaborationStore } from '~/stores/collaborationStore'
 import type { Task, TaskFormSubmitPayload } from '~/types/task'
 
 // ─── Pinia Store ────────────────────────────────────────────────────────────
 const taskStore = useTaskStore()
+const collaborationStore = useCollaborationStore()
 const {
   tasks,
   pending,
@@ -368,6 +414,42 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* View Switcher (Tabel / Kanban) */
+.view-switcher-pill {
+  display: flex;
+  align-items: center;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-switch-btn:hover {
+  color: #cbd5e1;
+}
+
+.view-switch-btn.active {
+  background: #1e293b;
+  color: #818cf8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 .card-badge {

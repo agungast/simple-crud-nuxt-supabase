@@ -20,6 +20,8 @@
             required
             class="text-input"
             :disabled="uploading"
+            @input="onTaskInput"
+            @blur="onTaskBlur"
           />
         </div>
       </div>
@@ -138,7 +140,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { TaskFormSubmitPayload, SelectedUploadFile } from '~/types/task'
+import { useCollaborationStore } from '~/stores/collaborationStore'
 
 // Props
 const props = defineProps<{
@@ -150,10 +154,31 @@ const emit = defineEmits<{
   (e: 'submit', payload: TaskFormSubmitPayload): void
 }>()
 
+const collaborationStore = useCollaborationStore()
+
 // State lokal form
 const localTaskText = ref<string>('')
 const selectedFiles = ref<SelectedUploadFile[]>([])
 const isDragging = ref<boolean>(false)
+let typingTimeout: NodeJS.Timeout | null = null
+
+const onTaskInput = () => {
+  const text = localTaskText.value.trim()
+  if (text.length > 0) {
+    collaborationStore.broadcastTyping(true, text)
+    if (typingTimeout) clearTimeout(typingTimeout)
+    typingTimeout = setTimeout(() => {
+      collaborationStore.broadcastTyping(false)
+    }, 2500)
+  } else {
+    collaborationStore.broadcastTyping(false)
+  }
+}
+
+const onTaskBlur = () => {
+  if (typingTimeout) clearTimeout(typingTimeout)
+  collaborationStore.broadcastTyping(false)
+}
 
 const formatSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`
@@ -221,10 +246,15 @@ const resetForm = () => {
     if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
   })
   selectedFiles.value = []
+  if (typingTimeout) clearTimeout(typingTimeout)
+  collaborationStore.broadcastTyping(false)
 }
 
 const handleSubmit = () => {
   if (!localTaskText.value.trim()) return
+  if (typingTimeout) clearTimeout(typingTimeout)
+  collaborationStore.broadcastTyping(false)
+
   emit('submit', {
     taskText: localTaskText.value.trim(),
     files: [...selectedFiles.value]

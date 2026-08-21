@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <!-- Right: Search + Cron Indicator + User Menu -->
+    <!-- Right: Search + Collaboration + Cron Indicator + User Menu -->
     <div class="topbar-right">
       <div class="search-box">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -27,6 +27,21 @@
         </svg>
         <input type="text" placeholder="Cari tugas..." class="search-input" />
       </div>
+
+      <!-- Realtime Who's Online Presence -->
+      <WhoIsOnline />
+
+      <!-- Live Cursor Visibility Toggle -->
+      <button
+        class="cursor-toggle-btn"
+        :class="{ active: collaborationStore.showRemoteCursors }"
+        @click="collaborationStore.toggleRemoteCursors"
+        :title="collaborationStore.showRemoteCursors ? 'Sembunyikan Kursor Rekan Tim' : 'Tampilkan Kursor Rekan Tim'"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5.65 12.37L.5 16.88V1.2l11.28 11.17H5.65z"></path>
+        </svg>
+      </button>
 
       <!-- Auto Cleanup (pg_cron) Status Indicator -->
       <div class="cron-menu-wrap" ref="cronMenuRef">
@@ -136,6 +151,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/authStore'
 import { useTaskStore } from '~/stores/taskStore'
+import { useCollaborationStore } from '~/stores/collaborationStore'
 
 const emit = defineEmits<{
   (e: 'toggle-sidebar'): void
@@ -143,6 +159,7 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore()
 const taskStore = useTaskStore()
+const collaborationStore = useCollaborationStore()
 
 const showDropdown = ref<boolean>(false)
 const showCronPopover = ref<boolean>(false)
@@ -167,6 +184,8 @@ const handleClickOutside = (e: MouseEvent) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  // Inisialisasi Presence & Broadcast channel jika user login
+  collaborationStore.initCollaborationChannel()
 })
 
 onUnmounted(() => {
@@ -270,6 +289,34 @@ onUnmounted(() => {
 
 .search-input::placeholder {
   color: #475569;
+}
+
+/* Cursor Toggle Button */
+.cursor-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #334155;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cursor-toggle-btn:hover {
+  background: #1e293b;
+  color: #cbd5e1;
+  border-color: #475569;
+}
+
+.cursor-toggle-btn.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #6366f1;
+  color: #818cf8;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.25);
 }
 
 /* Cron Indicator & Popover */
