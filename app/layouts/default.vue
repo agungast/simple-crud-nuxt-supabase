@@ -4,13 +4,15 @@
     <aside class="sidebar" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
       <!-- Logo -->
       <div class="sidebar-logo">
-        <div class="logo-icon-wrap">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 11 12 14 22 4"></polyline>
-            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-          </svg>
+        <div class="logo-brand-group">
+          <div class="logo-icon-wrap" title="TaskFlow">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4"></polyline>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+          </div>
+          <span class="logo-text">TaskFlow</span>
         </div>
-        <span class="logo-text">TaskFlow</span>
       </div>
 
       <!-- Navigation -->
@@ -23,8 +25,9 @@
             <rect x="14" y="14" width="7" height="7"></rect>
             <rect x="3" y="14" width="7" height="7"></rect>
           </svg>
-          <span>Dashboard</span>
+          <span class="nav-item-text">Dashboard</span>
         </NuxtLink>
+
         <div class="nav-item">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="8" y1="6" x2="21" y2="6"></line>
@@ -34,43 +37,58 @@
             <line x1="3" y1="12" x2="3.01" y2="12"></line>
             <line x1="3" y1="18" x2="3.01" y2="18"></line>
           </svg>
-          <span>Semua Tugas</span>
+          <span class="nav-item-text">Semua Tugas</span>
           <span class="nav-badge">{{ tasks.length }}</span>
         </div>
+
         <div class="nav-item">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 11 12 14 22 4"></polyline>
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
           </svg>
-          <span>Selesai</span>
+          <span class="nav-item-text">Selesai</span>
           <span class="nav-badge success">{{ completedCount }}</span>
         </div>
+
         <div class="nav-item">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
-          <span>Aktif</span>
+          <span class="nav-item-text">Aktif</span>
           <span class="nav-badge warning">{{ activeCount }}</span>
         </div>
       </nav>
 
       <!-- Sidebar Footer (User info & Logout) -->
       <div class="sidebar-footer">
-        <div class="user-info">
-          <div class="user-avatar">{{ authStore.userInitials }}</div>
+        <div
+          class="user-info clickable"
+          @click="authStore.openProfileModal"
+          :title="sidebarCollapsed ? `${authStore.displayName} (Klik untuk Edit Profil)` : 'Klik untuk Edit Profil'"
+        >
+          <div class="user-avatar">
+            <img v-if="authStore.avatarUrl" :src="authStore.avatarUrl" alt="Avatar" class="sidebar-avatar-img" />
+            <span v-else>{{ authStore.userInitials }}</span>
+          </div>
           <div class="user-meta">
-            <span class="user-name" :title="authStore.userEmail">{{ authStore.displayName }}</span>
+            <div class="user-name-row">
+              <span class="user-name" :title="authStore.userEmail">{{ authStore.displayName }}</span>
+              <svg class="edit-hint-icon" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </div>
             <span class="user-role">{{ authStore.userEmail || 'Supabase User' }}</span>
           </div>
         </div>
-        <button class="logout-btn" @click="handleLogout" :disabled="authStore.loading" title="Keluar">
+        <button class="logout-btn" @click="handleLogout" :disabled="authStore.loading" :title="sidebarCollapsed ? 'Keluar (Sign Out)' : undefined">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
             <line x1="21" y1="12" x2="9" y2="12"></line>
           </svg>
-          <span>Keluar</span>
+          <span class="logout-text">Keluar</span>
         </button>
       </div>
     </aside>
@@ -78,7 +96,7 @@
     <!-- Main Area -->
     <div class="main-area">
       <!-- Topbar -->
-      <AppHeader @toggle-sidebar="sidebarCollapsed = !sidebarCollapsed" />
+      <AppHeader @toggle-sidebar="toggleSidebar" />
 
       <!-- Page Content via Slot -->
       <slot />
@@ -97,12 +115,16 @@
     <!-- Modal Manajemen Lampiran File -->
     <AttachmentModal />
 
+    <!-- Modal Edit Profil Pengguna -->
+    <ProfileModal />
+
     <!-- Modal Konfirmasi Keluar (Logout) -->
     <LogoutModal />
   </div>
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import { useTaskStore } from '~/stores/taskStore'
 import { useAuthStore } from '~/stores/authStore'
 
@@ -117,9 +139,38 @@ const {
   activeCount
 } = storeToRefs(taskStore)
 
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  if (import.meta.client) {
+    localStorage.setItem('taskflow_sidebar_collapsed', sidebarCollapsed.value ? 'true' : 'false')
+  }
+}
+
 const handleLogout = () => {
   authStore.openLogoutModal()
 }
+
+// Keyboard shortcut: Ctrl + B or Cmd + B to toggle sidebar
+const handleKeyDown = (e: KeyboardEvent) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+    e.preventDefault()
+    toggleSidebar()
+  }
+}
+
+onMounted(() => {
+  if (import.meta.client) {
+    const saved = localStorage.getItem('taskflow_sidebar_collapsed')
+    if (saved !== null) {
+      sidebarCollapsed.value = saved === 'true'
+    }
+  }
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>
 
 <style scoped>
@@ -139,54 +190,46 @@ const handleLogout = () => {
   border-right: 1px solid #334155;
   display: flex;
   flex-direction: column;
-  transition: width 0.25s ease, min-width 0.25s ease;
+  transition: width 0.26s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.26s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.26s ease;
   position: sticky;
   top: 0;
   height: 100vh;
   z-index: 200;
-  overflow: hidden;
 }
 
+/* Ketika di-minimize secara default lebarnya 70px */
 .sidebar.sidebar-collapsed {
-  width: 64px;
-  min-width: 64px;
+  width: 70px;
+  min-width: 70px;
 }
 
-.sidebar.sidebar-collapsed .logo-text,
-.sidebar.sidebar-collapsed .nav-label,
-.sidebar.sidebar-collapsed .nav-item span,
-.sidebar.sidebar-collapsed .nav-badge,
-.sidebar.sidebar-collapsed .user-meta,
-.sidebar.sidebar-collapsed .logout-btn span {
-  display: none;
+/* Saat cursor hover ke sidebar yang ter-minimize: Otomatis maximize ke 240px */
+.sidebar.sidebar-collapsed:hover {
+  width: 240px;
+  min-width: 240px;
+  box-shadow: 12px 0 35px rgba(0, 0, 0, 0.65), 0 0 20px rgba(99, 102, 241, 0.15);
 }
 
-.sidebar.sidebar-collapsed .sidebar-logo {
-  justify-content: center;
-  padding: 20px 0;
-}
-
-.sidebar.sidebar-collapsed .nav-item {
-  justify-content: center;
-  padding: 10px 0;
-}
-
-.sidebar.sidebar-collapsed .user-info {
-  justify-content: center;
-}
-
-.sidebar.sidebar-collapsed .logout-btn {
-  justify-content: center;
-  padding: 8px 0;
-}
-
-/* Logo */
+/* Logo Area */
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 20px 16px;
+  padding: 16px 14px;
   border-bottom: 1px solid #334155;
+  height: 60px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.sidebar.sidebar-collapsed:not(:hover) .sidebar-logo {
+  justify-content: center;
+  padding: 16px 10px;
+}
+
+.logo-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .logo-icon-wrap {
@@ -210,14 +253,19 @@ const handleLogout = () => {
   white-space: nowrap;
 }
 
+.sidebar.sidebar-collapsed:not(:hover) .logo-text {
+  display: none;
+}
+
 /* Navigation */
 .sidebar-nav {
   flex: 1;
   padding: 16px 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .nav-label {
@@ -225,23 +273,27 @@ const handleLogout = () => {
   font-weight: 700;
   color: #475569;
   letter-spacing: 0.8px;
-  padding: 4px 8px;
+  padding: 4px 10px;
   margin: 0;
   white-space: nowrap;
 }
 
+.sidebar.sidebar-collapsed:not(:hover) .nav-label {
+  display: none;
+}
+
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
+  padding: 10px 12px;
   border-radius: 8px;
   color: #94a3b8;
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s ease;
-  position: relative;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -280,19 +332,59 @@ const handleLogout = () => {
   color: #fb923c;
 }
 
+/* Ketika collapsed & TIDAK di-hover: item navigasi terpusat dan teks tersembunyi */
+.sidebar.sidebar-collapsed:not(:hover) .nav-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.sidebar.sidebar-collapsed:not(:hover) .nav-item-text,
+.sidebar.sidebar-collapsed:not(:hover) .nav-badge {
+  display: none;
+}
+
 /* Sidebar Footer */
 .sidebar-footer {
-  padding: 16px 12px;
+  padding: 14px 12px;
   border-top: 1px solid #334155;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.sidebar.sidebar-collapsed:not(:hover) .sidebar-footer {
+  padding: 14px 8px;
+  align-items: center;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.user-info.clickable {
+  cursor: pointer;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.user-info.clickable:hover {
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.user-info.clickable:hover .edit-hint-icon {
+  color: #818cf8;
+  opacity: 1;
+}
+
+.sidebar.sidebar-collapsed:not(:hover) .user-info {
+  justify-content: center;
+  margin: 0;
+  padding: 0;
 }
 
 .user-avatar {
@@ -303,16 +395,48 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #ffffff;
   flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+  overflow: hidden;
+  border: 1.5px solid #334155;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.user-info.clickable:hover .user-avatar {
+  transform: scale(1.05);
+  border-color: #6366f1;
+}
+
+.sidebar-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .user-meta {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edit-hint-icon {
+  color: #64748b;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.sidebar.sidebar-collapsed:not(:hover) .user-meta {
+  display: none;
 }
 
 .user-name {
@@ -354,6 +478,18 @@ const handleLogout = () => {
   color: #ef4444;
 }
 
+.sidebar.sidebar-collapsed:not(:hover) .logout-btn {
+  justify-content: center;
+  padding: 8px;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+}
+
+.sidebar.sidebar-collapsed:not(:hover) .logout-text {
+  display: none;
+}
+
 /* ─── MAIN AREA ───────────────────────────────────────────────────────────── */
 .main-area {
   flex: 1;
@@ -369,3 +505,4 @@ const handleLogout = () => {
   }
 }
 </style>
+

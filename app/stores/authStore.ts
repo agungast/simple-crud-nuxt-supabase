@@ -11,6 +11,8 @@ export const useAuthStore = defineStore('auth', () => {
   const authError = ref<string | null>(null)
   const successMessage = ref<string | null>(null)
   const showLogoutModal = ref<boolean>(false)
+  const localAvatarUrl = ref<string | null>(null)
+  const localFullName = ref<string | null>(null)
 
   // ─── Getters ──────────────────────────────────────────────────────────────────
   const isAuthenticated = computed<boolean>(() => !!user.value)
@@ -18,8 +20,8 @@ export const useAuthStore = defineStore('auth', () => {
   const userEmail = computed<string>(() => user.value?.email ?? '')
 
   const displayName = computed<string>(() => {
-    // 1. Coba ambil dari user_metadata (full_name / name)
-    const rawName = user.value?.user_metadata?.full_name || user.value?.user_metadata?.name
+    // 1. Coba ambil dari local state atau user_metadata (full_name / name)
+    const rawName = localFullName.value || user.value?.user_metadata?.full_name || user.value?.user_metadata?.name
     if (rawName && typeof rawName === 'string' && rawName.trim()) {
       return rawName.trim()
     }
@@ -32,7 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const userInitials = computed<string>(() => {
     // 1. Coba ambil inisial dari full_name jika ada
-    const rawName = user.value?.user_metadata?.full_name || user.value?.user_metadata?.name
+    const rawName = localFullName.value || user.value?.user_metadata?.full_name || user.value?.user_metadata?.name
     if (rawName && typeof rawName === 'string' && rawName.trim()) {
       const parts = rawName.trim().split(/\s+/)
       if (parts.length >= 2 && parts[0] && parts[1]) {
@@ -238,6 +240,123 @@ export const useAuthStore = defineStore('auth', () => {
     return msg
   }
 
+  // ─── State Modal Profil ───────────────────────────────────────────────────────
+  const showProfileModal = ref<boolean>(false)
+  const profileLoading = ref<boolean>(false)
+  const profileError = ref<string | null>(null)
+  const profileSuccess = ref<string | null>(null)
+
+  const avatarUrl = computed<string | null>(() => {
+    if (localAvatarUrl.value !== null) {
+      return localAvatarUrl.value === '' ? null : localAvatarUrl.value
+    }
+    return user.value?.user_metadata?.avatar_url || null
+  })
+
+  const fullName = computed<string>(() => {
+    return localFullName.value || user.value?.user_metadata?.full_name || user.value?.user_metadata?.name || ''
+  })
+
+  function openProfileModal(): void {
+    profileError.value = null
+    profileSuccess.value = null
+    showProfileModal.value = true
+  }
+
+  function closeProfileModal(): void {
+    showProfileModal.value = false
+    profileError.value = null
+    profileSuccess.value = null
+  }
+
+  /**
+   * Memperbarui profil pengguna (Nama Lengkap, Foto Avatar, dan Kata Sandi)
+   */
+  async function updateUserProfile(payload: {
+    fullName: string
+    avatarFile?: File | null
+    removeAvatar?: boolean
+    newPassword?: string
+  }): Promise<boolean> {
+    if (!user.value) return false
+    profileLoading.value = true
+    profileError.value = null
+    profileSuccess.value = null
+
+    try {
+      let avatarPublicUrl = user.value.user_metadata?.avatar_url || null
+
+      // 1. Jika user meminta hapus avatar
+      if (payload.removeAvatar) {
+        avatarPublicUrl = null
+      }
+      // 2. Jika user mengunggah file foto avatar baru
+      else if (payload.avatarFile) {
+        const fileExt = payload.avatarFile.name.split('.').pop() || 'png'
+        // Simpan dalam folder public/ agar dapat dibaca publik tanpa RLS restriction
+        const filePath = `public/avatars/${user.value.id}-${Date.now()}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('project-crud')
+          .upload(filePath, payload.avatarFile, {
+            cacheControl: '3600',
+            upsert: true
+          })
+
+        if (uploadError) {
+          profileError.value = `Gagal mengunggah foto avatar: ${uploadError.message}`
+          return false
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('project-crud')
+          .getPublicUrl(filePath)
+
+        avatarPublicUrl = urlData.publicUrl
+      }
+
+      // 3. Susun data update untuk Supabase Auth
+      const updateData: {
+        data: {
+          full_name: string
+          avatar_url: string | null
+        }
+        password?: string
+      } = {
+        data: {
+          full_name: payload.fullName.trim(),
+          avatar_url: avatarPublicUrl
+        }
+      }
+
+      if (payload.newPassword && payload.newPassword.trim().length >= 6) {
+        updateData.password = payload.newPassword.trim()
+      }
+
+      const { data, error } = await supabase.auth.updateUser(updateData)
+
+      if (error) {
+        profileError.value = translateAuthError(error.message)
+        return false
+      }
+
+      if (data?.user) {
+        (user as any).value = data.user
+        localAvatarUrl.value = avatarPublicUrl ?? ''
+        localFullName.value = payload.fullName.trim()
+        profileSuccess.value = 'Profil Anda berhasil diperbarui!'
+        return true
+      }
+
+      return false
+    } catch (err: any) {
+      profileError.value = err.message || 'Terjadi kesalahan saat memperbarui profil.'
+      return false
+    } finally {
+      profileLoading.value = false
+    }
+  }
+
   function openLogoutModal(): void {
     showLogoutModal.value = true
   }
@@ -252,13 +371,19 @@ export const useAuthStore = defineStore('auth', () => {
     authError,
     successMessage,
     showLogoutModal,
+    showProfileModal,
+    profileLoading,
+    profileError,
+    profileSuccess,
 
     // Getters
     user,
     isAuthenticated,
     userEmail,
     displayName,
+    fullName,
     userInitials,
+    avatarUrl,
 
     // Actions
     signIn,
@@ -266,6 +391,9 @@ export const useAuthStore = defineStore('auth', () => {
     signOut,
     sendPasswordReset,
     updatePassword,
+    updateUserProfile,
+    openProfileModal,
+    closeProfileModal,
     openLogoutModal,
     closeLogoutModal,
     clearMessages

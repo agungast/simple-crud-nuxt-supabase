@@ -99,10 +99,19 @@ export const useTaskStore = defineStore('task', () => {
       if (error) {
         console.error('Error fetching tasks:', error)
       } else {
-        tasks.value = (data ?? []).map((t: any) => ({
-          ...t,
-          task_attachments: t.task_attachments ?? []
-        })) as Task[]
+        tasks.value = (data ?? []).map((t: any) => {
+          const rawAtts: TaskAttachment[] = t.task_attachments ?? []
+          const seen = new Set<string | number>()
+          const uniqueAtts = rawAtts.filter(a => {
+            if (seen.has(a.id)) return false
+            seen.add(a.id)
+            return true
+          })
+          return {
+            ...t,
+            task_attachments: uniqueAtts
+          }
+        }) as Task[]
       }
     } catch (err) {
       console.error('Unexpected error fetching tasks:', err)
@@ -366,17 +375,29 @@ export const useTaskStore = defineStore('task', () => {
         return false
       }
 
-      // Update state lokal
+      // Update state lokal secara aman (deduplikasi ID & shared reference fix)
+      const insertedAttachments = (attData as TaskAttachment[]) || []
       const targetIdx = tasks.value.findIndex(t => t.id === taskId)
       if (targetIdx !== -1 && tasks.value[targetIdx]) {
         const existing = tasks.value[targetIdx].task_attachments || []
-        tasks.value[targetIdx].task_attachments = [...existing, ...(attData as TaskAttachment[])]
+        const existingIds = new Set(existing.map(a => a.id))
+        const uniqueNew = insertedAttachments.filter(a => !existingIds.has(a.id))
+        tasks.value[targetIdx].task_attachments = [...existing, ...uniqueNew]
+
+        if (selectedTaskForAttachments.value && selectedTaskForAttachments.value.id === taskId) {
+          selectedTaskForAttachments.value.task_attachments = tasks.value[targetIdx].task_attachments
+        }
+      } else if (selectedTaskForAttachments.value && selectedTaskForAttachments.value.id === taskId) {
+        const existing = selectedTaskForAttachments.value.task_attachments || []
+        const existingIds = new Set(existing.map(a => a.id))
+        const uniqueNew = insertedAttachments.filter(a => !existingIds.has(a.id))
+        selectedTaskForAttachments.value.task_attachments = [...existing, ...uniqueNew]
       }
 
-      if (selectedTaskForAttachments.value && selectedTaskForAttachments.value.id === taskId) {
-        const existing = selectedTaskForAttachments.value.task_attachments || []
-        selectedTaskForAttachments.value.task_attachments = [...existing, ...(attData as TaskAttachment[])]
-      }
+      // Tambahkan ke Activity Log
+      const targetTask = tasks.value.find(t => t.id === taskId)
+      const taskName = targetTask?.task || 'Tugas'
+      addLog('UPDATE', `${taskName} (+${files.length} lampiran)`)
 
       return true
     } catch (err: any) {
@@ -408,17 +429,26 @@ export const useTaskStore = defineStore('task', () => {
 
       // 3. Update state lokal
       const targetIdx = tasks.value.findIndex(t => t.id === attachment.task_id)
+      let taskName = 'Tugas'
       if (targetIdx !== -1 && tasks.value[targetIdx]?.task_attachments) {
+        taskName = tasks.value[targetIdx].task
         tasks.value[targetIdx].task_attachments = tasks.value[targetIdx].task_attachments!.filter(
           a => a.id !== attachment.id
         )
       }
 
-      if (selectedTaskForAttachments.value?.task_attachments) {
-        selectedTaskForAttachments.value.task_attachments = selectedTaskForAttachments.value.task_attachments.filter(
-          a => a.id !== attachment.id
-        )
+      if (selectedTaskForAttachments.value && selectedTaskForAttachments.value.id === attachment.task_id) {
+        if (targetIdx !== -1 && tasks.value[targetIdx]?.task_attachments) {
+          selectedTaskForAttachments.value.task_attachments = tasks.value[targetIdx].task_attachments
+        } else if (selectedTaskForAttachments.value.task_attachments) {
+          selectedTaskForAttachments.value.task_attachments = selectedTaskForAttachments.value.task_attachments.filter(
+            a => a.id !== attachment.id
+          )
+        }
       }
+
+      // Tambahkan ke Activity Log
+      addLog('UPDATE', `${taskName} (hapus ${attachment.file_name})`)
     } catch (err: any) {
       console.error('Error deleting attachment:', err)
       alert('Terjadi kesalahan saat menghapus lampiran: ' + err.message)
@@ -542,12 +572,41 @@ export const useTaskStore = defineStore('task', () => {
             const updatedTask = payload.new as Task
             const idx = tasks.value.findIndex((t: Task) => t.id === updatedTask.id)
             if (idx !== -1 && tasks.value[idx]) {
-              // Pertahankan lampiran yang sudah di-load
-              const existingAttachments = tasks.value[idx].task_attachments || []
+              const oldTask = tasks.value[idx]
+              const existingAttachments = oldTask.task_attachments || []
               tasks.value[idx] = {
                 ...updatedTask,
                 task_attachments: existingAttachments
               }
+              if (oldTask.is_completed !== updatedTask.is_completed || oldTask.task !== updatedTask.task) {
+                addLog('UPDATE', updatedTask.task)
+              }
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes' as any,
+        { event: '*', schema: 'public', table: 'task_attachments' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT') {
+            const newAtt = payload.new as TaskAttachment
+            const targetIdx = tasks.value.findIndex(t => t.id === newAtt.task_id)
+            if (targetIdx !== -1 && tasks.value[targetIdx]) {
+              const existing = tasks.value[targetIdx].task_attachments || []
+              if (!existing.some(a => a.id === newAtt.id)) {
+                tasks.value[targetIdx].task_attachments = [...existing, newAtt]
+                addLog('UPDATE', `${tasks.value[targetIdx].task} (+1 lampiran)`)
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const oldAtt = payload.old as TaskAttachment
+            const targetIdx = tasks.value.findIndex(t => t.id === oldAtt.task_id)
+            if (targetIdx !== -1 && tasks.value[targetIdx]?.task_attachments) {
+              tasks.value[targetIdx].task_attachments = tasks.value[targetIdx].task_attachments!.filter(
+                a => a.id !== oldAtt.id
+              )
+              addLog('UPDATE', `${tasks.value[targetIdx].task} (lampiran dihapus)`)
             }
           }
         }
