@@ -31,28 +31,68 @@ export interface SelectedUploadFile {
   isPrivate: boolean
 }
 
+// ─── Enum Types ───────────────────────────────────────────────────────────────
+
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+export type TaskStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED'
+
+// ─── Subtask Model ────────────────────────────────────────────────────────────
+
+export interface Subtask {
+  id: string
+  task_id: string
+  title: string
+  is_completed: boolean
+  created_at: string
+}
+
+export interface SubtaskPayload {
+  title: string
+  is_completed?: boolean
+}
+
+// ─── Main Task Model (Jira + Notion Hybrid) ───────────────────────────────────
+
 /**
- * Representasi satu baris tugas dari tabel `todos` di Supabase.
+ * Representasi satu baris tugas dari tabel `tasks` di Supabase.
  */
 export interface Task {
-  id: string | number
-  task: string
+  id: string
+  user_id: string
+  project_id: string | null
+  title: string
+  description_markdown: string
+  status: TaskStatus
+  priority: TaskPriority
+  tags: string[]
+  due_date: string | null
+  estimated_hours: number
   is_completed: boolean
-  image_url: string | null
+  cover_image_url: string | null
+  position: number
   created_at: string
-  user_id?: string | null
+  updated_at: string
+  
+  // Relational Data (Optional untuk view)
+  subtasks?: Subtask[]
   task_attachments?: TaskAttachment[]
 }
 
 /**
- * Payload yang dikirim saat membuat tugas baru (INSERT).
- * Field `id` dan `created_at` otomatis di-generate oleh database.
+ * Payload yang dikirim saat membuat tugas baru (INSERT) atau mengedit (UPDATE).
  */
 export interface TaskPayload {
-  task: string
+  project_id?: string | null
+  title: string
+  description_markdown?: string
+  status?: TaskStatus
+  priority?: TaskPriority
+  tags?: string[]
+  due_date?: string | null
+  estimated_hours?: number
   is_completed?: boolean
-  image_url?: string | null
-  user_id?: string | null
+  cover_image_url?: string | null
+  position?: number
 }
 
 // ─── Activity Log (Realtime) ──────────────────────────────────────────────────
