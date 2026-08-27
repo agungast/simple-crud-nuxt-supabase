@@ -6,7 +6,7 @@
     <!-- Tugas -->
     <td class="td-task">
       <span class="task-text" :class="{ 'completed-text': task.is_completed }">
-        {{ task.task }}
+        {{ task.title }}
       </span>
     </td>
 
@@ -25,7 +25,7 @@
 
     <!-- Lampiran (Gambar & Dokumen) -->
     <td class="td-img">
-      <div v-if="hasAttachments || task.image_url" class="attachments-cell">
+      <div v-if="hasAttachments || task.cover_image_url" class="attachments-cell">
         <!-- Thumbnail Gambar Pertama (Image Transformation) -->
         <div
           v-if="primaryImage"
@@ -34,8 +34,8 @@
           :title="`Lihat ${imageCount} gambar`"
         >
           <img
-            :src="taskStore.getThumbnailUrl(primaryImage.file_path || task.image_url || '', 80, 80)"
-            :alt="task.task"
+            :src="taskStore.getThumbnailUrl(primaryImage.file_path || task.cover_image_url || '', 80, 80)"
+            :alt="task.title"
             class="thumb-img"
             loading="lazy"
           />
@@ -113,7 +113,7 @@
           </div>
           <h3 class="modal-title">Hapus Tugas</h3>
           <p class="modal-message">Apakah ingin menghapus tugas?</p>
-          <p class="modal-task-name">"{{ task.task }}"</p>
+          <p class="modal-task-name">"{{ task.title }}"</p>
           <div class="modal-actions">
             <button class="btn-cancel" @click="showConfirm = false">Batal</button>
             <button class="btn-confirm" @click="confirmDelete">Hapus</button>
@@ -148,7 +148,7 @@
             <p v-if="editError" class="edit-error">{{ editError }}</p>
             <div class="modal-actions">
               <button type="button" class="btn-cancel" @click="showEdit = false">Batal</button>
-              <button type="submit" class="btn-save" :disabled="!editText.trim() || editText.trim() === task.task">Simpan</button>
+              <button type="submit" class="btn-save" :disabled="!editText.trim() || editText.trim() === task.title">Simpan</button>
             </div>
           </form>
         </div>
@@ -182,7 +182,7 @@ const attachments = computed(() => props.task.task_attachments || [])
 
 const totalAttachments = computed(() => {
   if (attachments.value.length > 0) return attachments.value.length
-  return props.task.image_url ? 1 : 0
+  return props.task.cover_image_url ? 1 : 0
 })
 
 const hasAttachments = computed(() => totalAttachments.value > 0)
@@ -195,13 +195,13 @@ const imageAttachments = computed(() => {
 
 const imageCount = computed(() => {
   if (imageAttachments.value.length > 0) return imageAttachments.value.length
-  return props.task.image_url ? 1 : 0
+  return props.task.cover_image_url ? 1 : 0
 })
 
 const primaryImage = computed(() => {
   if (imageAttachments.value.length > 0) return imageAttachments.value[0]
-  if (props.task.image_url) {
-    return { file_path: props.task.image_url, file_name: props.task.task }
+  if (props.task.cover_image_url) {
+    return { file_path: props.task.cover_image_url, file_name: props.task.title }
   }
   return null
 })
@@ -214,13 +214,13 @@ const openGallery = () => {
   if (imageAttachments.value.length > 0) {
     const items: LightboxMediaItem[] = imageAttachments.value.map(a => ({
       url: a.is_private ? a.file_path : taskStore.getPublicOriginalUrl(a.file_path),
-      title: `${props.task.task} — ${a.file_name}`,
+      title: `${props.task.title} — ${a.file_name}`,
       fileName: a.file_name,
       isPrivate: a.is_private
     }))
     taskStore.openLightboxGallery(items, 0)
-  } else if (props.task.image_url) {
-    taskStore.openLightbox(props.task.image_url, props.task.task)
+  } else if (props.task.cover_image_url) {
+    taskStore.openLightbox(props.task.cover_image_url, props.task.title)
   }
 }
 
@@ -239,7 +239,7 @@ const editError = ref<string>('')
 const editInputRef = ref<HTMLInputElement | null>(null)
 
 const openEdit = async (): Promise<void> => {
-  editText.value = props.task.task
+  editText.value = props.task.title
   editError.value = ''
   showEdit.value = true
   // Fokus ke input setelah modal muncul
@@ -254,7 +254,7 @@ const confirmEdit = (): void => {
     editError.value = 'Nama tugas tidak boleh kosong.'
     return
   }
-  if (trimmed === props.task.task) {
+  if (trimmed === props.task.title) {
     showEdit.value = false
     return
   }

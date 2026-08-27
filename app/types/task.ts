@@ -82,6 +82,7 @@ export interface Task {
  * Payload yang dikirim saat membuat tugas baru (INSERT) atau mengedit (UPDATE).
  */
 export interface TaskPayload {
+  user_id?: string
   project_id?: string | null
   title: string
   description_markdown?: string

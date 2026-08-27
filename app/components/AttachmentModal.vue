@@ -13,7 +13,7 @@
               </div>
               <div>
                 <h3 class="modal-title">Manajemen Lampiran</h3>
-                <p class="modal-subtitle">"{{ taskStore.selectedTaskForAttachments.task }}"</p>
+                <p class="modal-subtitle">"{{ taskStore.selectedTaskForAttachments.title }}"</p>
               </div>
             </div>
             <button class="close-btn" @click="taskStore.closeAttachmentModal" title="Tutup">

@@ -276,9 +276,9 @@ export const useTaskStore = defineStore('task', () => {
 
       // 3. Simpan tugas ke tabel `todos`
       const payload: TaskPayload = {
-        task: taskText,
+        title: taskText,
         is_completed: false,
-        image_url: primaryImageUrl
+        cover_image_url: primaryImageUrl
       }
 
       if (currentUserId) {
@@ -327,7 +327,7 @@ export const useTaskStore = defineStore('task', () => {
       // 5. Update state lokal secara instan
       if (!tasks.value.some(t => t.id === newTask.id)) {
         tasks.value.unshift(newTask)
-        addLog('INSERT', newTask.task)
+        addLog('INSERT', newTask.title)
       }
     } catch (err: any) {
       console.error('Unexpected error adding task:', err)
@@ -396,7 +396,7 @@ export const useTaskStore = defineStore('task', () => {
 
       // Tambahkan ke Activity Log
       const targetTask = tasks.value.find(t => t.id === taskId)
-      const taskName = targetTask?.task || 'Tugas'
+      const taskName = targetTask?.title || 'Tugas'
       addLog('UPDATE', `${taskName} (+${files.length} lampiran)`)
 
       return true
@@ -431,7 +431,7 @@ export const useTaskStore = defineStore('task', () => {
       const targetIdx = tasks.value.findIndex(t => t.id === attachment.task_id)
       let taskName = 'Tugas'
       if (targetIdx !== -1 && tasks.value[targetIdx]?.task_attachments) {
-        taskName = tasks.value[targetIdx].task
+        taskName = tasks.value[targetIdx].title
         tasks.value[targetIdx].task_attachments = tasks.value[targetIdx].task_attachments!.filter(
           a => a.id !== attachment.id
         )
@@ -474,28 +474,28 @@ export const useTaskStore = defineStore('task', () => {
         tasks.value[targetIdx].is_completed = previousStatus
       }
     } else {
-      addLog('UPDATE', task.task)
+      addLog('UPDATE', task.title)
     }
   }
 
   // ─── UPDATE (edit nama) ───────────────────────────────────────────────────────
   async function editTask(task: Task, newName: string): Promise<void> {
     const targetIdx = tasks.value.findIndex(t => t.id === task.id)
-    const oldName = task.task
+    const oldName = task.title
     if (targetIdx !== -1 && tasks.value[targetIdx]) {
-      tasks.value[targetIdx].task = newName
+      tasks.value[targetIdx].title = newName
     }
 
     const { error } = await (supabase
       .from('todos') as any)
-      .update({ task: newName })
+      .update({ title: newName })
       .eq('id', task.id)
 
     if (error) {
       console.error('Error editing task:', error)
       alert('Gagal mengubah nama tugas: ' + error.message)
       if (targetIdx !== -1 && tasks.value[targetIdx]) {
-        tasks.value[targetIdx].task = oldName
+        tasks.value[targetIdx].title = oldName
       }
     } else {
       addLog('UPDATE', newName)
@@ -519,7 +519,7 @@ export const useTaskStore = defineStore('task', () => {
       return
     }
 
-    addLog('DELETE', task.task)
+    addLog('DELETE', task.title)
 
     // Hapus semua file lampiran terkait dari Storage jika ada
     if (task.task_attachments && task.task_attachments.length > 0) {
@@ -529,10 +529,10 @@ export const useTaskStore = defineStore('task', () => {
       } catch (err) {
         console.warn('Error batch deleting storage files:', err)
       }
-    } else if (task.image_url) {
+    } else if (task.cover_image_url) {
       // Legacy cleanup
       try {
-        const parts = task.image_url.split('/')
+        const parts = task.cover_image_url.split('/')
         const fileName = parts[parts.length - 1]
         await supabase.storage.from('project-crud').remove([`public/${fileName}`])
       } catch (err) {
@@ -559,14 +559,14 @@ export const useTaskStore = defineStore('task', () => {
               if (!tasks.value.some(t => t.id === newTask.id)) {
                 newTask.task_attachments = []
                 tasks.value.unshift(newTask)
-                addLog('INSERT', newTask.task)
+                addLog('INSERT', newTask.title)
               }
             }
           } else if (payload.eventType === 'DELETE') {
             const alreadyRemoved = !tasks.value.some(t => t.id === payload.old.id)
             tasks.value = tasks.value.filter((t: Task) => t.id !== payload.old.id)
             if (!alreadyRemoved) {
-              addLog('DELETE', payload.old.task ?? 'Tugas dihapus')
+              addLog('DELETE', payload.old.title ?? 'Tugas dihapus')
             }
           } else if (payload.eventType === 'UPDATE') {
             const updatedTask = payload.new as Task
@@ -578,8 +578,8 @@ export const useTaskStore = defineStore('task', () => {
                 ...updatedTask,
                 task_attachments: existingAttachments
               }
-              if (oldTask.is_completed !== updatedTask.is_completed || oldTask.task !== updatedTask.task) {
-                addLog('UPDATE', updatedTask.task)
+              if (oldTask.is_completed !== updatedTask.is_completed || oldTask.title !== updatedTask.title) {
+                addLog('UPDATE', updatedTask.title)
               }
             }
           }
@@ -596,7 +596,7 @@ export const useTaskStore = defineStore('task', () => {
               const existing = tasks.value[targetIdx].task_attachments || []
               if (!existing.some(a => a.id === newAtt.id)) {
                 tasks.value[targetIdx].task_attachments = [...existing, newAtt]
-                addLog('UPDATE', `${tasks.value[targetIdx].task} (+1 lampiran)`)
+                addLog('UPDATE', `${tasks.value[targetIdx].title} (+1 lampiran)`)
               }
             }
           } else if (payload.eventType === 'DELETE') {
@@ -606,7 +606,7 @@ export const useTaskStore = defineStore('task', () => {
               tasks.value[targetIdx].task_attachments = tasks.value[targetIdx].task_attachments!.filter(
                 a => a.id !== oldAtt.id
               )
-              addLog('UPDATE', `${tasks.value[targetIdx].task} (lampiran dihapus)`)
+              addLog('UPDATE', `${tasks.value[targetIdx].title} (lampiran dihapus)`)
             }
           }
         }
