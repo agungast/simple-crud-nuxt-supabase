@@ -6,7 +6,7 @@
     <!-- Tugas -->
     <td class="td-task">
       <span class="task-text" :class="{ 'completed-text': task.is_completed }">
-        {{ task.task }}
+        {{ task.title }}
       </span>
     </td>
 
@@ -23,25 +23,58 @@
       </button>
     </td>
 
-    <!-- Gambar -->
+    <!-- Lampiran (Gambar & Dokumen) -->
     <td class="td-img">
-      <div
-        v-if="task.image_url"
-        class="thumb-wrap"
-        @click="emit('open-lightbox', task.image_url)"
-        title="Lihat gambar"
-      >
-        <img :src="task.image_url" :alt="`Gambar: ${task.task}`" class="thumb-img" />
-        <div class="thumb-overlay">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            <line x1="11" y1="8" x2="11" y2="14"></line>
-            <line x1="8" y1="11" x2="14" y2="11"></line>
-          </svg>
+      <div v-if="hasAttachments || task.cover_image_url" class="attachments-cell">
+        <!-- Thumbnail Gambar Pertama (Image Transformation) -->
+        <div
+          v-if="primaryImage"
+          class="thumb-wrap"
+          @click="openGallery"
+          :title="`Lihat ${imageCount} gambar`"
+        >
+          <img
+            :src="taskStore.getThumbnailUrl(primaryImage.file_path || task.cover_image_url || '', 80, 80)"
+            :alt="task.title"
+            class="thumb-img"
+            loading="lazy"
+          />
+          <div class="thumb-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span v-if="imageCount > 1" class="more-count">+{{ imageCount - 1 }}</span>
+          </div>
         </div>
+
+        <!-- Tombol / Badge Manajemen Semua Lampiran -->
+        <button
+          class="attachment-trigger-btn"
+          @click="taskStore.openAttachmentModal(task)"
+          :title="`${totalAttachments} Lampiran — Klik untuk kelola`"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+          </svg>
+          <span class="att-count">{{ totalAttachments }}</span>
+          <span v-if="hasPrivateAttachments" class="lock-dot" title="Memiliki file privat"></span>
+        </button>
       </div>
-      <span v-else class="no-img">—</span>
+
+      <!-- Tombol Tambah Lampiran Cepat jika Kosong -->
+      <button
+        v-else
+        class="add-att-quick-btn"
+        @click="taskStore.openAttachmentModal(task)"
+        title="Tambah Lampiran"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>File</span>
+      </button>
     </td>
 
     <!-- Aksi -->
@@ -80,7 +113,7 @@
           </div>
           <h3 class="modal-title">Hapus Tugas</h3>
           <p class="modal-message">Apakah ingin menghapus tugas?</p>
-          <p class="modal-task-name">"{{ task.task }}"</p>
+          <p class="modal-task-name">"{{ task.title }}"</p>
           <div class="modal-actions">
             <button class="btn-cancel" @click="showConfirm = false">Batal</button>
             <button class="btn-confirm" @click="confirmDelete">Hapus</button>
@@ -115,7 +148,7 @@
             <p v-if="editError" class="edit-error">{{ editError }}</p>
             <div class="modal-actions">
               <button type="button" class="btn-cancel" @click="showEdit = false">Batal</button>
-              <button type="submit" class="btn-save" :disabled="!editText.trim() || editText.trim() === task.task">Simpan</button>
+              <button type="submit" class="btn-save" :disabled="!editText.trim() || editText.trim() === task.title">Simpan</button>
             </div>
           </form>
         </div>
@@ -124,40 +157,89 @@
   </Teleport>
 </template>
 
-<script setup>
-import { ref, nextTick } from 'vue'
+<script setup lang="ts">
+import { useTaskStore } from '~/stores/taskStore'
+import type { Task, LightboxMediaItem } from '~/types/task'
+
+const taskStore = useTaskStore()
 
 // Props
-const props = defineProps({
-  task: {
-    type: Object,
-    required: true
-  },
-  index: {
-    type: Number,
-    required: true
-  }
-})
+const props = defineProps<{
+  task: Task
+  index: number
+}>()
 
 // Emits
-const emit = defineEmits(['toggle', 'delete', 'edit', 'open-lightbox'])
+const emit = defineEmits<{
+  (e: 'toggle', task: Task): void
+  (e: 'delete', task: Task): void
+  (e: 'edit', payload: { task: Task; newName: string }): void
+  (e: 'open-lightbox', url: string): void
+}>()
+
+// ─── Attachments Computed ──────────────────────────────────────────────────
+const attachments = computed(() => props.task.task_attachments || [])
+
+const totalAttachments = computed(() => {
+  if (attachments.value.length > 0) return attachments.value.length
+  return props.task.cover_image_url ? 1 : 0
+})
+
+const hasAttachments = computed(() => totalAttachments.value > 0)
+
+const isImage = (mimeType: string) => mimeType ? mimeType.startsWith('image/') : false
+
+const imageAttachments = computed(() => {
+  return attachments.value.filter(a => isImage(a.file_type))
+})
+
+const imageCount = computed(() => {
+  if (imageAttachments.value.length > 0) return imageAttachments.value.length
+  return props.task.cover_image_url ? 1 : 0
+})
+
+const primaryImage = computed(() => {
+  if (imageAttachments.value.length > 0) return imageAttachments.value[0]
+  if (props.task.cover_image_url) {
+    return { file_path: props.task.cover_image_url, file_name: props.task.title }
+  }
+  return null
+})
+
+const hasPrivateAttachments = computed(() => {
+  return attachments.value.some(a => a.is_private)
+})
+
+const openGallery = () => {
+  if (imageAttachments.value.length > 0) {
+    const items: LightboxMediaItem[] = imageAttachments.value.map(a => ({
+      url: a.is_private ? a.file_path : taskStore.getPublicOriginalUrl(a.file_path),
+      title: `${props.task.title} — ${a.file_name}`,
+      fileName: a.file_name,
+      isPrivate: a.is_private
+    }))
+    taskStore.openLightboxGallery(items, 0)
+  } else if (props.task.cover_image_url) {
+    taskStore.openLightbox(props.task.cover_image_url, props.task.title)
+  }
+}
 
 // ─── Konfirmasi Hapus ─────────────────────────────────────────────────────────
-const showConfirm = ref(false)
+const showConfirm = ref<boolean>(false)
 
-const confirmDelete = () => {
+const confirmDelete = (): void => {
   emit('delete', props.task)
   showConfirm.value = false
 }
 
 // ─── Edit Nama Tugas ──────────────────────────────────────────────────────────
-const showEdit = ref(false)
-const editText = ref('')
-const editError = ref('')
-const editInputRef = ref(null)
+const showEdit = ref<boolean>(false)
+const editText = ref<string>('')
+const editError = ref<string>('')
+const editInputRef = ref<HTMLInputElement | null>(null)
 
-const openEdit = async () => {
-  editText.value = props.task.task
+const openEdit = async (): Promise<void> => {
+  editText.value = props.task.title
   editError.value = ''
   showEdit.value = true
   // Fokus ke input setelah modal muncul
@@ -166,13 +248,13 @@ const openEdit = async () => {
   editInputRef.value?.select()
 }
 
-const confirmEdit = () => {
+const confirmEdit = (): void => {
   const trimmed = editText.value.trim()
   if (!trimmed) {
     editError.value = 'Nama tugas tidak boleh kosong.'
     return
   }
-  if (trimmed === props.task.task) {
+  if (trimmed === props.task.title) {
     showEdit.value = false
     return
   }
@@ -184,12 +266,12 @@ const confirmEdit = () => {
 <style scoped>
 /* Table Row */
 .table-row {
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid #1c273c;
   transition: background 0.15s ease;
 }
 
 .table-row:hover {
-  background: rgba(99, 102, 241, 0.04);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .table-row:last-child {
@@ -197,18 +279,18 @@ const confirmEdit = () => {
 }
 
 .table-row.row-completed {
-  opacity: 0.65;
+  opacity: 0.6;
 }
 
 td {
-  padding: 13px 16px;
+  padding: 12px 16px;
   vertical-align: middle;
 }
 
 /* No column */
 .td-no {
-  color: #475569;
-  font-size: 12px;
+  color: #64748b;
+  font-size: 11.5px;
   font-weight: 600;
   width: 48px;
 }
@@ -220,8 +302,8 @@ td {
 
 .task-text {
   display: block;
-  font-size: 14px;
-  color: #e2e8f0;
+  font-size: 13.5px;
+  color: #f1f5f9;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -230,7 +312,7 @@ td {
 
 .completed-text {
   text-decoration: line-through;
-  color: #c1c7d3;
+  color: #64748b;
 }
 
 /* Status Badge */
@@ -242,56 +324,66 @@ td {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
   font-weight: 600;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
+  font-family: inherit;
 }
 
 .badge-done {
   background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.2);
   color: #4ade80;
 }
 
 .badge-done:hover {
-  background: rgba(34, 197, 94, 0.2);
+  background: rgba(34, 197, 94, 0.18);
 }
 
 .badge-active {
-  background: rgba(251, 146, 60, 0.1);
-  color: #fb923c;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
 }
 
 .badge-active:hover {
-  background: rgba(251, 146, 60, 0.2);
+  background: rgba(245, 158, 11, 0.18);
 }
 
 .badge-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: currentColor;
   flex-shrink: 0;
 }
 
-/* Image thumbnail */
+/* Image / Attachments cell */
 .td-img {
-  width: 80px;
+  width: 110px;
+}
+
+.attachments-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .thumb-wrap {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   overflow: hidden;
   position: relative;
   cursor: pointer;
-  border: 1px solid #334155;
-  transition: all 0.2s ease;
+  border: 1px solid #1f2a3f;
+  transition: border-color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .thumb-img {
@@ -303,22 +395,79 @@ td {
 .thumb-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
   color: #fff;
 }
 
+.more-count {
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 1px;
+}
+
 .thumb-wrap:hover {
-  border-color: #6366f1;
-  transform: scale(1.05);
+  border-color: #4f46e5;
 }
 
 .thumb-wrap:hover .thumb-overlay {
   opacity: 1;
+}
+
+.attachment-trigger-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  color: #818cf8;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.attachment-trigger-btn:hover {
+  background: rgba(79, 70, 229, 0.16);
+  border-color: #4f46e5;
+}
+
+.lock-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+.add-att-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px dashed #232f48;
+  color: #64748b;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.add-att-quick-btn:hover {
+  border-color: #818cf8;
+  color: #818cf8;
+  background: rgba(79, 70, 229, 0.06);
 }
 
 .no-img {
@@ -328,48 +477,48 @@ td {
 
 /* Action Buttons */
 .td-action {
-  width: 100px;
+  width: 90px;
   text-align: center;
 }
 
 .action-group {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .edit-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: #475569;
+  color: #64748b;
   cursor: pointer;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .edit-btn:hover {
-  background: rgba(99, 102, 241, 0.1);
-  border-color: rgba(99, 102, 241, 0.2);
+  background: rgba(79, 70, 229, 0.1);
+  border-color: rgba(79, 70, 229, 0.2);
   color: #818cf8;
 }
 
 .delete-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: #475569;
+  color: #64748b;
   cursor: pointer;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .delete-btn:hover {
@@ -383,7 +532,6 @@ td {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -392,14 +540,14 @@ td {
 }
 
 .modal-box {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 16px;
-  padding: 32px 28px;
+  background: #111726;
+  border: 1px solid #1f2a3f;
+  border-radius: 12px;
+  padding: 28px 24px;
   max-width: 380px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .modal-icon {
@@ -489,7 +637,7 @@ td {
 }
 .modal-enter-active .modal-box,
 .modal-leave-active .modal-box {
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .modal-enter-from .modal-box {
   transform: scale(0.88) translateY(8px);
