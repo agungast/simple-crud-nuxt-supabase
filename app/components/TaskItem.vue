@@ -266,12 +266,12 @@ const confirmEdit = (): void => {
 <style scoped>
 /* Table Row */
 .table-row {
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid #1c273c;
   transition: background 0.15s ease;
 }
 
 .table-row:hover {
-  background: rgba(99, 102, 241, 0.04);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .table-row:last-child {
@@ -279,18 +279,18 @@ const confirmEdit = (): void => {
 }
 
 .table-row.row-completed {
-  opacity: 0.65;
+  opacity: 0.6;
 }
 
 td {
-  padding: 13px 16px;
+  padding: 12px 16px;
   vertical-align: middle;
 }
 
 /* No column */
 .td-no {
-  color: #475569;
-  font-size: 12px;
+  color: #64748b;
+  font-size: 11.5px;
   font-weight: 600;
   width: 48px;
 }
@@ -302,8 +302,8 @@ td {
 
 .task-text {
   display: block;
-  font-size: 14px;
-  color: #e2e8f0;
+  font-size: 13.5px;
+  color: #f1f5f9;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -312,7 +312,7 @@ td {
 
 .completed-text {
   text-decoration: line-through;
-  color: #c1c7d3;
+  color: #64748b;
 }
 
 /* Status Badge */
@@ -324,37 +324,40 @@ td {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
   font-weight: 600;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
+  font-family: inherit;
 }
 
 .badge-done {
   background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.2);
   color: #4ade80;
 }
 
 .badge-done:hover {
-  background: rgba(34, 197, 94, 0.2);
+  background: rgba(34, 197, 94, 0.18);
 }
 
 .badge-active {
-  background: rgba(251, 146, 60, 0.1);
-  color: #fb923c;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
 }
 
 .badge-active:hover {
-  background: rgba(251, 146, 60, 0.2);
+  background: rgba(245, 158, 11, 0.18);
 }
 
 .badge-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: currentColor;
   flex-shrink: 0;
@@ -372,14 +375,14 @@ td {
 }
 
 .thumb-wrap {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   overflow: hidden;
   position: relative;
   cursor: pointer;
-  border: 1px solid #334155;
-  transition: all 0.2s ease;
+  border: 1px solid #1f2a3f;
+  transition: border-color 0.15s ease;
   flex-shrink: 0;
 }
 
@@ -398,7 +401,7 @@ td {
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
   color: #fff;
 }
 
@@ -410,8 +413,7 @@ td {
 }
 
 .thumb-wrap:hover {
-  border-color: #6366f1;
-  transform: scale(1.05);
+  border-color: #4f46e5;
 }
 
 .thumb-wrap:hover .thumb-overlay {
@@ -423,21 +425,21 @@ td {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 3px 7px;
   border-radius: 6px;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.2);
   color: #818cf8;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
+  font-family: inherit;
 }
 
 .attachment-trigger-btn:hover {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: #818cf8;
-  transform: translateY(-1px);
+  background: rgba(79, 70, 229, 0.16);
+  border-color: #4f46e5;
 }
 
 .lock-dot {
@@ -445,27 +447,27 @@ td {
   height: 5px;
   border-radius: 50%;
   background: #f59e0b;
-  box-shadow: 0 0 4px #f59e0b;
 }
 
 .add-att-quick-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 3px 7px;
   border-radius: 6px;
   background: transparent;
-  border: 1px dashed #334155;
+  border: 1px dashed #232f48;
   color: #64748b;
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s ease;
+  font-family: inherit;
 }
 
 .add-att-quick-btn:hover {
   border-color: #818cf8;
   color: #818cf8;
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(79, 70, 229, 0.06);
 }
 
 .no-img {
@@ -475,48 +477,48 @@ td {
 
 /* Action Buttons */
 .td-action {
-  width: 100px;
+  width: 90px;
   text-align: center;
 }
 
 .action-group {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .edit-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: #475569;
+  color: #64748b;
   cursor: pointer;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .edit-btn:hover {
-  background: rgba(99, 102, 241, 0.1);
-  border-color: rgba(99, 102, 241, 0.2);
+  background: rgba(79, 70, 229, 0.1);
+  border-color: rgba(79, 70, 229, 0.2);
   color: #818cf8;
 }
 
 .delete-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: #475569;
+  color: #64748b;
   cursor: pointer;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .delete-btn:hover {
@@ -530,7 +532,6 @@ td {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -539,14 +540,14 @@ td {
 }
 
 .modal-box {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 16px;
-  padding: 32px 28px;
+  background: #111726;
+  border: 1px solid #1f2a3f;
+  border-radius: 12px;
+  padding: 28px 24px;
   max-width: 380px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .modal-icon {
@@ -636,7 +637,7 @@ td {
 }
 .modal-enter-active .modal-box,
 .modal-leave-active .modal-box {
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .modal-enter-from .modal-box {
   transform: scale(0.88) translateY(8px);

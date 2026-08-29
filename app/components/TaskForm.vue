@@ -240,7 +240,6 @@ defineExpose({
 .task-form {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   height: 100%;
   min-height: 380px;
   flex: 1;
@@ -250,14 +249,7 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.form-bottom-actions {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-top: 16px;
+  flex: 1;
 }
 
 .form-field {
@@ -266,19 +258,10 @@ defineExpose({
   gap: 6px;
 }
 
-.label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .form-label {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: #cbd5e1;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .required {
@@ -286,17 +269,23 @@ defineExpose({
 }
 
 .optional {
+  color: #64748b;
   font-size: 11px;
   font-weight: 400;
-  color: #64748b;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .files-count-badge {
   font-size: 11px;
   color: #818cf8;
-  background: rgba(99, 102, 241, 0.12);
-  padding: 1px 6px;
-  border-radius: 4px;
+  background: rgba(79, 70, 229, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
   font-weight: 600;
 }
 
@@ -316,20 +305,20 @@ defineExpose({
 
 .text-input {
   width: 100%;
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 9px;
+  background: #090d16;
+  border: 1px solid #1f2a3f;
+  border-radius: 8px;
   padding: 10px 14px 10px 36px;
   color: #f1f5f9;
-  font-size: 14px;
+  font-size: 13.5px;
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   font-family: inherit;
 }
 
 .text-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
 }
 
 .text-input::placeholder {
@@ -338,19 +327,19 @@ defineExpose({
 
 /* Upload Area Drag & Drop */
 .upload-area {
-  border: 1.5px dashed #334155;
-  border-radius: 9px;
+  border: 1.5px dashed #232f48;
+  border-radius: 8px;
   padding: 14px 16px;
   cursor: pointer;
-  background: #0f172a;
-  transition: all 0.2s ease;
+  background: #090d16;
+  transition: all 0.15s ease;
   display: block;
 }
 
 .upload-area:hover,
 .upload-area.is-dragging {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.06);
+  border-color: #4f46e5;
+  background: rgba(79, 70, 229, 0.04);
 }
 
 .hidden-file-input {
@@ -364,11 +353,11 @@ defineExpose({
 }
 
 .upload-icon-wrap {
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(79, 70, 229, 0.1);
+  border: 1px solid rgba(79, 70, 229, 0.2);
   color: #818cf8;
   display: flex;
   align-items: center;
@@ -393,7 +382,7 @@ defineExpose({
 .selected-files-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   margin-top: 4px;
 }
 
@@ -402,22 +391,22 @@ defineExpose({
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: #0d1422;
+  border: 1px solid #1f2a3f;
   border-radius: 8px;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .file-card.is-private-card {
-  border-left: 3px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
 }
 
 .file-thumb {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 6px;
   overflow: hidden;
-  background: #1e293b;
+  background: #111726;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -505,14 +494,15 @@ defineExpose({
 }
 
 .file-remove-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.12);
   color: #f87171;
 }
 
 /* Divider */
 .form-divider {
   height: 1px;
-  background: #334155;
+  background: #1c273c;
+  margin: 14px 0;
 }
 
 /* Submit Button */
@@ -521,27 +511,26 @@ defineExpose({
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 11px;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  border: none;
-  border-radius: 9px;
+  padding: 10px 16px;
+  background: #4f46e5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   font-family: inherit;
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45);
+  background: #4338ca;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .submit-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 

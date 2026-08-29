@@ -187,12 +187,11 @@ const handleRegister = async () => {
 
 <style scoped>
 .auth-card {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 16px;
+  background: #111726;
+  border: 1px solid #232f48;
+  border-radius: 12px;
   padding: 32px 28px;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .auth-card-header {
@@ -205,6 +204,7 @@ const handleRegister = async () => {
   font-weight: 700;
   color: #f1f5f9;
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
 .auth-card-desc {
@@ -227,14 +227,14 @@ const handleRegister = async () => {
 }
 
 .auth-alert.error {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
   color: #f87171;
 }
 
 .auth-alert.success {
-  background: rgba(34, 197, 94, 0.12);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
   color: #4ade80;
 }
 
@@ -276,14 +276,14 @@ const handleRegister = async () => {
 
 .form-input {
   width: 100%;
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 9px;
+  background: #090d16;
+  border: 1px solid #232f48;
+  border-radius: 8px;
   padding: 10px 14px 10px 38px;
   color: #f1f5f9;
   font-size: 14px;
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   font-family: inherit;
 }
 
@@ -292,8 +292,8 @@ const handleRegister = async () => {
 }
 
 .form-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
 .form-input::placeholder {
@@ -326,29 +326,28 @@ const handleRegister = async () => {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 11px;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  border: none;
-  border-radius: 9px;
+  padding: 10px 16px;
+  background: #4f46e5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
   color: #ffffff;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   margin-top: 6px;
+  font-family: inherit;
 }
 
 .auth-submit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45);
+  background: #4338ca;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .auth-submit-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
 .spinner {
@@ -370,7 +369,7 @@ const handleRegister = async () => {
   text-align: center;
   font-size: 13px;
   color: #94a3b8;
-  border-top: 1px solid #334155;
+  border-top: 1px solid #232f48;
   padding-top: 18px;
 }
 
@@ -379,14 +378,14 @@ const handleRegister = async () => {
 }
 
 .auth-link {
-  color: #818cf8;
+  color: #6366f1;
   font-weight: 600;
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .auth-link:hover {
-  color: #a5b4fc;
+  color: #818cf8;
   text-decoration: underline;
 }
 </style>

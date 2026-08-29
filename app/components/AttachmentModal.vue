@@ -380,7 +380,7 @@ const handleUploadNewFiles = async () => {
 }
 
 .attachment-card.is-private {
-  border-left: 3px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
 }
 
 .att-thumb-wrap {

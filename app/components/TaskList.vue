@@ -161,24 +161,21 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 </script>
 
 <style scoped>
-/* Loading */
+/* Status / Loading */
 .table-status {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: #64748b;
-  font-size: 14px;
-  padding: 32px 24px;
-  min-height: 380px;
-  flex: 1;
+  padding: 36px 20px;
+  color: #94a3b8;
+  font-size: 13px;
 }
 
 .pulse-spinner {
   width: 8px;
   height: 8px;
-  background: #6366f1;
+  background: #4f46e5;
   border-radius: 50%;
   animation: pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -202,27 +199,28 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .empty-icon {
-  width: 64px;
-  height: 64px;
-  background: rgba(99, 102, 241, 0.08);
-  border-radius: 14px;
+  width: 52px;
+  height: 52px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #1f2a3f;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #475569;
+  color: #64748b;
   margin-bottom: 8px;
 }
 
 .empty-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #64748b;
+  color: #94a3b8;
   margin: 0;
 }
 
 .empty-desc {
-  font-size: 13px;
-  color: #475569;
+  font-size: 12px;
+  color: #64748b;
   margin: 0;
   max-width: 260px;
 }
@@ -240,28 +238,28 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
 .data-table thead tr {
-  border-bottom: 1px solid #334155;
-  height: 42px;
+  border-bottom: 1px solid #1c273c;
+  height: 38px;
+  background: #0d1422;
 }
 
 .data-table tbody tr {
-  height: 56px;
+  height: 54px;
 }
 
 .data-table th {
-  padding: 12px 16px;
+  padding: 10px 16px;
   text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  color: #ffffff;
-  letter-spacing: 0.07em;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
-  background: rgba(15, 23, 42, 0.3);
 }
 
 .col-no     { width: 48px; }
@@ -276,8 +274,8 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-top: 1px solid #334155;
-  background: rgba(15, 23, 42, 0.25);
+  border-top: 1px solid #1c273c;
+  background: #0d1422;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -312,30 +310,30 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .stat-pill.done {
-  background: rgba(34, 197, 94, 0.12);
+  background: rgba(34, 197, 94, 0.1);
   color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
 .stat-pill.active {
-  background: rgba(251, 146, 60, 0.12);
-  color: #fb923c;
-  border: 1px solid rgba(251, 146, 60, 0.25);
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 /* Pagination Controls */
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .page-nav-btn {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: #090d16;
+  border: 1px solid #1f2a3f;
   color: #cbd5e1;
   display: flex;
   align-items: center;
@@ -345,13 +343,13 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .page-nav-btn:hover:not(:disabled) {
-  background: #1e293b;
-  border-color: #6366f1;
+  background: #111726;
+  border-color: #4f46e5;
   color: #ffffff;
 }
 
 .page-nav-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -362,30 +360,30 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .page-num-btn {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: #090d16;
+  border: 1px solid #1f2a3f;
   color: #94a3b8;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
+  font-family: inherit;
 }
 
 .page-num-btn:hover:not(.active) {
-  border-color: #475569;
+  border-color: #334155;
   color: #f1f5f9;
 }
 
 .page-num-btn.active {
-  background: #6366f1;
-  border-color: #818cf8;
+  background: #4f46e5;
+  border-color: #4f46e5;
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
 }
 </style>

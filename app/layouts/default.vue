@@ -190,7 +190,7 @@ onUnmounted(() => {
   border-right: 1px solid #334155;
   display: flex;
   flex-direction: column;
-  transition: width 0.26s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.26s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.26s ease;
+  transition: box-shadow 0.26s ease;
   position: sticky;
   top: 0;
   height: 100vh;
