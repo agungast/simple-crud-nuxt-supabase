@@ -59,19 +59,21 @@ export interface SubtaskPayload {
 export interface Task {
   id: string
   user_id: string
-  project_id: string | null
+  project_id?: string | null
   title: string
-  description_markdown: string
+  task?: string
+  description_markdown?: string
   status: TaskStatus
   priority: TaskPriority
   tags: string[]
   due_date: string | null
   estimated_hours: number
   is_completed: boolean
-  cover_image_url: string | null
-  position: number
+  cover_image_url?: string | null
+  image_url?: string | null
+  position?: number
   created_at: string
-  updated_at: string
+  updated_at?: string
   
   // Relational Data (Optional untuk view)
   subtasks?: Subtask[]
@@ -84,7 +86,8 @@ export interface Task {
 export interface TaskPayload {
   user_id?: string
   project_id?: string | null
-  title: string
+  title?: string
+  task?: string
   description_markdown?: string
   status?: TaskStatus
   priority?: TaskPriority
@@ -93,6 +96,7 @@ export interface TaskPayload {
   estimated_hours?: number
   is_completed?: boolean
   cover_image_url?: string | null
+  image_url?: string | null
   position?: number
 }
 
@@ -143,14 +147,31 @@ export interface BackupFile {
   size_bytes: number
 }
 
-// ─── Form Submit Payload ──────────────────────────────────────────────────────
+// ─── Form Submit & Edit Payloads ──────────────────────────────────────────────
 
 /**
  * Payload yang dikirim oleh komponen TaskForm saat user menekan tombol submit.
  */
 export interface TaskFormSubmitPayload {
   taskText: string
+  priority: TaskPriority
+  status: TaskStatus
+  dueDate?: string | null
+  estimatedHours?: number
+  tags?: string[]
   files: SelectedUploadFile[]
+}
+
+/**
+ * Payload untuk memperbarui atribut tugas dari modal edit.
+ */
+export interface TaskEditPayload {
+  title: string
+  priority?: TaskPriority
+  status?: TaskStatus
+  due_date?: string | null
+  estimated_hours?: number
+  tags?: string[]
 }
 
 /**

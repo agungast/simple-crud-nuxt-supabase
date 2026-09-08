@@ -429,7 +429,7 @@ const handleSaveProfile = async () => {
 .modal-close-btn {
   background: transparent;
   border: none;
-  color: #64748b;
+  color: #94a3b8;
   cursor: pointer;
   padding: 6px;
   border-radius: 6px;
@@ -593,7 +593,7 @@ const handleSaveProfile = async () => {
 
 .avatar-hint {
   font-size: 11px;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 /* Form Group */
@@ -622,7 +622,7 @@ const handleSaveProfile = async () => {
 .input-icon {
   position: absolute;
   left: 12px;
-  color: #64748b;
+  color: #94a3b8;
   pointer-events: none;
 }
 
@@ -639,8 +639,8 @@ const handleSaveProfile = async () => {
 }
 
 .form-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.25);
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
 }
 
 .readonly-input {
@@ -669,7 +669,7 @@ const handleSaveProfile = async () => {
   right: 12px;
   background: none;
   border: none;
-  color: #64748b;
+  color: #94a3b8;
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -722,7 +722,7 @@ const handleSaveProfile = async () => {
 }
 
 .chevron-toggle {
-  color: #64748b;
+  color: #94a3b8;
   transition: transform 0.2s ease;
 }
 

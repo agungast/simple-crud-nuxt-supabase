@@ -2,8 +2,8 @@
   <header class="topbar">
     <!-- Left: Toggle + Breadcrumb -->
     <div class="topbar-left">
-      <button class="toggle-btn" @click="emit('toggle-sidebar')" title="Toggle Sidebar">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button class="toggle-btn" @click="emit('toggle-sidebar')" title="Toggle Sidebar (Ctrl+B)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
           <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -11,21 +11,29 @@
       </button>
       <div class="breadcrumb">
         <span class="breadcrumb-root">TaskFlow</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="breadcrumb-sep" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="9 18 15 12 9 6"></polyline>
         </svg>
         <span class="breadcrumb-current">Dashboard</span>
       </div>
     </div>
 
-    <!-- Right: Search + Cron Indicator + User Menu -->
+    <!-- Right: Search + User Menu -->
     <div class="topbar-right">
       <div class="search-box">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" placeholder="Cari tugas..." class="search-input" />
+        <input
+          id="global-search-input"
+          ref="searchInputRef"
+          v-model="taskStore.searchQuery"
+          type="text"
+          placeholder="Cari tugas..."
+          class="search-input"
+        />
+        <kbd class="search-kbd">⌘K</kbd>
       </div>
 
       <!-- User Avatar & Dropdown -->
@@ -78,6 +86,7 @@ const taskStore = useTaskStore()
 
 const showDropdown = ref<boolean>(false)
 const menuRef = ref<HTMLDivElement | null>(null)
+const searchInputRef = ref<HTMLInputElement | null>(null)
 
 const handleOpenProfile = () => {
   showDropdown.value = false
@@ -96,20 +105,29 @@ const handleClickOutside = (e: MouseEvent) => {
   }
 }
 
+const handleKeyDown = (e: KeyboardEvent) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    searchInputRef.value?.focus()
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  window.addEventListener('keydown', handleKeyDown)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
 <style scoped>
 .topbar {
   height: 60px;
-  background: #1e293b;
-  border-bottom: 1px solid #334155;
+  background: #0f172a;
+  border-bottom: 1px solid #1f2a3f;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -117,30 +135,32 @@ onUnmounted(() => {
   position: sticky;
   top: 0;
   z-index: 100;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Left */
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .toggle-btn {
-  background: transparent;
-  border: none;
+  background: #111726;
+  border: 1px solid #1f2a3f;
   color: #94a3b8;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
+  padding: 6px 8px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .toggle-btn:hover {
-  background: #334155;
+  background: #172136;
+  border-color: #2e3e5e;
   color: #f1f5f9;
 }
 
@@ -148,8 +168,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  color: #64748b;
+  font-size: 13.5px;
 }
 
 .breadcrumb-root {
@@ -157,8 +176,13 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
+.breadcrumb-sep {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
 .breadcrumb-current {
-  color: #f1f5f9;
+  color: #f8fafc;
   font-weight: 600;
 }
 
@@ -166,7 +190,7 @@ onUnmounted(() => {
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .search-box {
@@ -175,32 +199,47 @@ onUnmounted(() => {
   align-items: center;
 }
 
-.search-box svg {
+.search-icon {
   position: absolute;
-  left: 10px;
-  color: #64748b;
+  left: 11px;
+  color: #94a3b8;
   pointer-events: none;
 }
 
 .search-input {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: #090d16;
+  border: 1px solid #1f2a3f;
   border-radius: 8px;
-  padding: 6px 12px 6px 32px;
+  padding: 7px 42px 7px 32px;
   color: #f1f5f9;
   font-size: 13px;
   outline: none;
-  width: 180px;
-  transition: all 0.2s ease;
+  width: 220px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-family: inherit;
 }
 
 .search-input:focus {
-  border-color: #6366f1;
-  width: 230px;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
 }
 
 .search-input::placeholder {
-  color: #475569;
+  color: #94a3b8;
+}
+
+.search-kbd {
+  position: absolute;
+  right: 8px;
+  background: #111726;
+  border: 1px solid #1f2a3f;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+  pointer-events: none;
+  font-family: monospace;
 }
 
 /* User Menu */
@@ -212,16 +251,16 @@ onUnmounted(() => {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #818cf8);
-  color: #ffffff;
-  border: 2px solid #334155;
-  font-size: 12px;
+  background: #111726;
+  color: #f1f5f9;
+  border: 1.5px solid #2d3b55;
+  font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease, transform 0.15s ease;
   overflow: hidden;
   padding: 0;
 }
@@ -233,7 +272,7 @@ onUnmounted(() => {
 }
 
 .topbar-avatar:hover {
-  border-color: #6366f1;
+  border-color: #4f46e5;
   transform: scale(1.05);
 }
 
@@ -241,12 +280,12 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 220px;
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  box-shadow: 0 15px 30px -8px rgba(0, 0, 0, 0.5);
-  padding: 8px;
+  width: 230px;
+  background: #111726;
+  border: 1px solid #1f2a3f;
+  border-radius: 10px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  padding: 6px;
   z-index: 200;
 }
 
@@ -265,7 +304,7 @@ onUnmounted(() => {
 
 .dropdown-email {
   font-size: 11px;
-  color: #64748b;
+  color: #cbd5e1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -273,8 +312,8 @@ onUnmounted(() => {
 
 .user-dropdown-divider {
   height: 1px;
-  background: #334155;
-  margin: 6px 0;
+  background: #1f2a3f;
+  margin: 4px 0;
 }
 
 .dropdown-item {
@@ -289,27 +328,28 @@ onUnmounted(() => {
   color: #cbd5e1;
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
+  font-family: inherit;
 }
 
 .dropdown-item:hover {
-  background: #334155;
-  color: #f1f5f9;
+  background: #172136;
+  color: #ffffff;
 }
 
 .dropdown-item.logout {
-  color: #f87171;
+  color: #fca5a5;
 }
 
 .dropdown-item.logout:hover {
   background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
+  color: #f87171;
 }
 
 /* Transition */
 .fade-enter-active,
 .fade-leave-active {
-  transition: all 0.15s ease;
+  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .fade-enter-from,

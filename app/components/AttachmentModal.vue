@@ -336,7 +336,7 @@ const handleUploadNewFiles = async () => {
   border-radius: 8px;
   background: transparent;
   border: none;
-  color: #64748b;
+  color: #94a3b8;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -418,7 +418,7 @@ const handleUploadNewFiles = async () => {
 .zip-doc { color: #fbbf24; }
 
 .ext-badge {
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   margin-top: 1px;
@@ -436,7 +436,7 @@ const handleUploadNewFiles = async () => {
 }
 
 .att-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #f1f5f9;
   white-space: nowrap;
@@ -444,14 +444,27 @@ const handleUploadNewFiles = async () => {
   text-overflow: ellipsis;
 }
 
+.file-ext {
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.file-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
 .privacy-badge {
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 600;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 4px;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 .privacy-badge.private {
@@ -471,7 +484,7 @@ const handleUploadNewFiles = async () => {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: #64748b;
+  color: #94a3b8;
   margin-top: 2px;
 }
 
@@ -504,7 +517,7 @@ const handleUploadNewFiles = async () => {
 }
 
 .action-btn.delete {
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .action-btn.delete:hover {
@@ -520,7 +533,7 @@ const handleUploadNewFiles = async () => {
   background: #0f172a;
   border: 1px dashed #334155;
   border-radius: 10px;
-  color: #64748b;
+  color: #cbd5e1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -601,7 +614,7 @@ const handleUploadNewFiles = async () => {
 }
 
 .new-file-size {
-  color: #64748b;
+  color: #94a3b8;
   font-size: 11px;
 }
 

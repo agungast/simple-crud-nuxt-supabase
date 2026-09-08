@@ -1,11 +1,6 @@
 <template>
   <div class="auth-card">
     <div class="auth-card-header">
-      <div class="header-icon-wrap">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-        </svg>
-      </div>
       <h2 class="auth-card-title">Atur Ulang Kata Sandi</h2>
       <p class="auth-card-desc">Masukkan kata sandi baru yang aman untuk akun Anda</p>
     </div>
@@ -190,47 +185,32 @@ const handleResetPassword = async () => {
 
 <style scoped>
 .auth-card {
-  background: #111726;
-  border: 1px solid #232f48;
+  background: #0f1626;
+  border: 1px solid #1e293b;
   border-radius: 12px;
-  padding: 32px 28px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  padding: 34px 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .auth-card-header {
   margin-bottom: 24px;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.header-icon-wrap {
-  width: 42px;
-  height: 42px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #4ade80;
-  margin-bottom: 12px;
 }
 
 .auth-card-title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #f8fafc;
   margin: 0;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.02em;
 }
 
 .auth-card-desc {
-  font-size: 13px;
+  font-size: 13.5px;
   color: #94a3b8;
   margin-top: 6px;
   margin-bottom: 0;
+  line-height: 1.5;
 }
 
 /* Alert */
@@ -238,7 +218,7 @@ const handleResetPassword = async () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-radius: 8px;
   font-size: 13px;
   line-height: 1.4;
@@ -246,15 +226,15 @@ const handleResetPassword = async () => {
 }
 
 .auth-alert.error {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  color: #fca5a5;
 }
 
 .auth-alert.success {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  color: #4ade80;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  color: #86efac;
 }
 
 .auth-alert svg {
@@ -271,7 +251,7 @@ const handleResetPassword = async () => {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .form-label {
@@ -289,17 +269,17 @@ const handleResetPassword = async () => {
 .input-icon {
   position: absolute;
   left: 12px;
-  color: #64748b;
+  color: #94a3b8;
   pointer-events: none;
 }
 
 .form-input {
   width: 100%;
   background: #090d16;
-  border: 1px solid #232f48;
+  border: 1px solid #1e293b;
   border-radius: 8px;
   padding: 10px 14px 10px 38px;
-  color: #f1f5f9;
+  color: #f8fafc;
   font-size: 14px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -311,12 +291,12 @@ const handleResetPassword = async () => {
 }
 
 .form-input:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
 }
 
 .form-input::placeholder {
-  color: #475569;
+  color: #94a3b8;
 }
 
 .toggle-pwd-btn {
@@ -324,7 +304,7 @@ const handleResetPassword = async () => {
   right: 10px;
   background: transparent;
   border: none;
-  color: #64748b;
+  color: #94a3b8;
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -335,7 +315,7 @@ const handleResetPassword = async () => {
 }
 
 .toggle-pwd-btn:hover {
-  color: #94a3b8;
+  color: #f8fafc;
 }
 
 /* Submit Button */
@@ -345,23 +325,32 @@ const handleResetPassword = async () => {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 10px 16px;
+  padding: 11px 16px;
   background: #4f46e5;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   color: #ffffff;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   margin-top: 6px;
   font-family: inherit;
 }
 
 .auth-submit-btn:hover:not(:disabled) {
   background: #4338ca;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.auth-submit-btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.auth-submit-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
 }
 
 .auth-submit-btn:disabled {
@@ -386,7 +375,7 @@ const handleResetPassword = async () => {
 .auth-card-footer {
   margin-top: 24px;
   text-align: center;
-  border-top: 1px solid #232f48;
+  border-top: 1px solid #1e293b;
   padding-top: 18px;
 }
 
@@ -394,14 +383,14 @@ const handleResetPassword = async () => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #6366f1;
-  font-size: 13px;
+  color: #818cf8;
+  font-size: 13.5px;
   font-weight: 600;
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .back-link:hover {
-  color: #818cf8;
+  color: #a5b4fc;
 }
 </style>

@@ -14,6 +14,7 @@
             <line x1="3" y1="18" x2="3.01" y2="18"></line>
           </svg>
           <input
+            id="task-title-input"
             v-model="localTaskText"
             type="text"
             placeholder="Deskripsikan tugas Anda..."
@@ -22,6 +23,107 @@
             :disabled="uploading"
           />
         </div>
+      </div>
+
+      <!-- Prioritas Tugas (Segmented Selector) -->
+      <div class="form-field">
+        <label class="form-label">Prioritas Tugas</label>
+        <div class="priority-selector">
+          <button
+            v-for="p in priorityOptions"
+            :key="p.value"
+            :id="`priority-btn-${p.value.toLowerCase()}`"
+            type="button"
+            class="priority-btn"
+            :class="[p.dotClass, { active: selectedPriority === p.value }]"
+            @click="selectedPriority = p.value"
+            :disabled="uploading"
+          >
+            <span class="p-dot"></span>
+            <span>{{ p.label }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Grid 2 Kolom: Status Alur & Batas Waktu -->
+      <div class="form-row-2col">
+        <div class="form-field">
+          <label class="form-label">Status Alur</label>
+          <div class="select-wrapper">
+            <select id="task-status-select" v-model="selectedStatus" class="custom-select" :disabled="uploading">
+              <option v-for="s in statusOptions" :key="s.value" :value="s.value">
+                {{ s.label }}
+              </option>
+            </select>
+            <svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Batas Waktu <span class="optional">(Deadline)</span></label>
+          <div class="input-wrapper">
+            <input
+              id="task-due-date"
+              v-model="dueDate"
+              type="date"
+              class="text-input date-input"
+              :disabled="uploading"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid 2 Kolom: Estimasi Waktu & Tags -->
+      <div class="form-row-2col">
+        <div class="form-field">
+          <label class="form-label">Estimasi <span class="optional">(Jam)</span></label>
+          <div class="input-wrapper">
+            <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <input
+              id="task-estimate-input"
+              v-model="estimatedHours"
+              type="number"
+              step="0.5"
+              min="0"
+              placeholder="cth: 2.5"
+              class="text-input"
+              :disabled="uploading"
+            />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Tag / Label <span class="optional">(Tekan Enter)</span></label>
+          <div class="input-wrapper">
+            <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+            <input
+              id="task-tag-input"
+              v-model="tagInput"
+              type="text"
+              placeholder="frontend, bug..."
+              class="text-input"
+              :disabled="uploading"
+              @keydown.enter.prevent="addTag"
+              @keydown.,.prevent="addTag"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Tag Pills Container jika ada -->
+      <div v-if="tags.length > 0" class="tags-container">
+        <span v-for="(t, idx) in tags" :key="t" class="tag-pill">
+          <span>#{{ t }}</span>
+          <button type="button" class="tag-del-btn" @click="removeTag(idx)" title="Hapus tag">&times;</button>
+        </span>
       </div>
 
       <!-- Multiple Files Uploader -->
@@ -51,13 +153,13 @@
           />
           <div class="upload-inner">
             <div class="upload-icon-wrap">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
               </svg>
             </div>
-            <div>
-              <p class="upload-title">Seret atau Klik untuk Upload File</p>
-              <p class="upload-hint">Mendukung banyak Gambar (PNG, JPG), PDF, Dokumen hingga 15MB</p>
+            <div class="upload-text-group">
+              <p class="upload-title">Pilih berkas atau seret ke sini</p>
+              <p class="upload-hint">PNG, JPG, PDF, DOCX, ZIP hingga 15 MB</p>
             </div>
           </div>
         </label>
@@ -119,7 +221,7 @@
       <div class="form-divider"></div>
 
       <!-- Tombol Submit -->
-      <button type="submit" class="submit-btn" :disabled="uploading || !localTaskText.trim()">
+      <button id="task-submit-btn" type="submit" class="submit-btn" :disabled="uploading || !localTaskText.trim()">
         <span v-if="uploading" class="spinner-container">
           <span class="spinner"></span>
           <span>Mengunggah & Menyimpan...</span>
@@ -138,7 +240,7 @@
 </template>
 
 <script setup lang="ts">
-import type { TaskFormSubmitPayload, SelectedUploadFile } from '~/types/task'
+import type { TaskFormSubmitPayload, SelectedUploadFile, TaskPriority, TaskStatus } from '~/types/task'
 
 // Props
 const props = defineProps<{
@@ -152,8 +254,40 @@ const emit = defineEmits<{
 
 // State lokal form
 const localTaskText = ref<string>('')
+const selectedPriority = ref<TaskPriority>('MEDIUM')
+const selectedStatus = ref<TaskStatus>('TODO')
+const dueDate = ref<string>('')
+const estimatedHours = ref<number | null>(null)
+const tags = ref<string[]>([])
+const tagInput = ref<string>('')
 const selectedFiles = ref<SelectedUploadFile[]>([])
 const isDragging = ref<boolean>(false)
+
+const priorityOptions: { value: TaskPriority; label: string; dotClass: string }[] = [
+  { value: 'LOW', label: 'Rendah', dotClass: 'dot-low' },
+  { value: 'MEDIUM', label: 'Sedang', dotClass: 'dot-medium' },
+  { value: 'HIGH', label: 'Tinggi', dotClass: 'dot-high' },
+  { value: 'URGENT', label: 'Mendesak', dotClass: 'dot-urgent' }
+]
+
+const statusOptions: { value: TaskStatus; label: string }[] = [
+  { value: 'BACKLOG', label: 'Backlog' },
+  { value: 'TODO', label: 'To Do' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'DONE', label: 'Done' }
+]
+
+const addTag = () => {
+  const clean = tagInput.value.trim().replace(/^#/, '').toLowerCase()
+  if (clean && !tags.value.includes(clean)) {
+    tags.value.push(clean)
+  }
+  tagInput.value = ''
+}
+
+const removeTag = (index: number) => {
+  tags.value.splice(index, 1)
+}
 
 const formatSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`
@@ -217,6 +351,12 @@ const removeFile = (index: number) => {
 
 const resetForm = () => {
   localTaskText.value = ''
+  selectedPriority.value = 'MEDIUM'
+  selectedStatus.value = 'TODO'
+  dueDate.value = ''
+  estimatedHours.value = null
+  tags.value = []
+  tagInput.value = ''
   selectedFiles.value.forEach(item => {
     if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
   })
@@ -225,8 +365,16 @@ const resetForm = () => {
 
 const handleSubmit = () => {
   if (!localTaskText.value.trim()) return
+  if (tagInput.value.trim()) {
+    addTag()
+  }
   emit('submit', {
     taskText: localTaskText.value.trim(),
+    priority: selectedPriority.value,
+    status: selectedStatus.value,
+    dueDate: dueDate.value ? new Date(dueDate.value).toISOString() : null,
+    estimatedHours: estimatedHours.value ? Number(estimatedHours.value) : 0,
+    tags: [...tags.value],
     files: [...selectedFiles.value]
   })
 }
@@ -243,6 +391,7 @@ defineExpose({
   height: 100%;
   min-height: 380px;
   flex: 1;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .form-fields-wrapper {
@@ -261,7 +410,7 @@ defineExpose({
 .form-label {
   font-size: 13px;
   font-weight: 500;
-  color: #cbd5e1;
+  color: #f1f5f9;
 }
 
 .required {
@@ -269,8 +418,8 @@ defineExpose({
 }
 
 .optional {
-  color: #64748b;
-  font-size: 11px;
+  color: #94a3b8;
+  font-size: 11.5px;
   font-weight: 400;
 }
 
@@ -282,8 +431,9 @@ defineExpose({
 
 .files-count-badge {
   font-size: 11px;
-  color: #818cf8;
-  background: rgba(79, 70, 229, 0.1);
+  color: #cbd5e1;
+  background: #111726;
+  border: 1px solid #1f2a3f;
   padding: 2px 8px;
   border-radius: 12px;
   font-weight: 600;
@@ -299,7 +449,7 @@ defineExpose({
 .input-icon {
   position: absolute;
   left: 12px;
-  color: #64748b;
+  color: #94a3b8;
   pointer-events: none;
 }
 
@@ -322,24 +472,181 @@ defineExpose({
 }
 
 .text-input::placeholder {
-  color: #475569;
+  color: #94a3b8;
+}
+
+/* Priority Selector */
+.priority-selector {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.priority-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #090d16;
+  border: 1px solid #1f2a3f;
+  border-radius: 8px;
+  padding: 8px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.priority-btn:hover:not(:disabled) {
+  border-color: #2d3b55;
+  color: #f1f5f9;
+}
+
+.p-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-low .p-dot { background: #2dd4bf; }
+.dot-medium .p-dot { background: #818cf8; }
+.dot-high .p-dot { background: #fbbf24; }
+.dot-urgent .p-dot { background: #f87171; }
+
+.dot-low.active {
+  background: rgba(45, 212, 191, 0.12);
+  border-color: #2dd4bf;
+  color: #5eead4;
+}
+
+.dot-medium.active {
+  background: rgba(129, 140, 248, 0.12);
+  border-color: #818cf8;
+  color: #c7d2fe;
+}
+
+.dot-high.active {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: #fbbf24;
+  color: #fde68a;
+}
+
+.dot-urgent.active {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: #f87171;
+  color: #fca5a5;
+}
+
+/* 2-Column Responsive Row */
+.form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .form-row-2col {
+    grid-template-columns: 1fr;
+  }
+  .priority-selector {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Select Wrapper */
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.custom-select {
+  width: 100%;
+  background: #090d16;
+  border: 1px solid #1f2a3f;
+  border-radius: 8px;
+  padding: 10px 32px 10px 14px;
+  color: #f1f5f9;
+  font-size: 13.5px;
+  font-family: inherit;
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.custom-select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.select-chevron {
+  position: absolute;
+  right: 12px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.date-input {
+  color-scheme: dark;
+  padding-left: 14px;
+}
+
+/* Tags Container */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -6px;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.tag-del-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+}
+
+.tag-del-btn:hover {
+  color: #f87171;
 }
 
 /* Upload Area Drag & Drop */
 .upload-area {
-  border: 1.5px dashed #232f48;
+  border: 1.5px dashed #2d3b55;
   border-radius: 8px;
   padding: 14px 16px;
   cursor: pointer;
   background: #090d16;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
   display: block;
 }
 
 .upload-area:hover,
 .upload-area.is-dragging {
   border-color: #4f46e5;
-  background: rgba(79, 70, 229, 0.04);
+  background: #0d1424;
 }
 
 .hidden-file-input {
@@ -356,25 +663,29 @@ defineExpose({
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: rgba(79, 70, 229, 0.1);
-  border: 1px solid rgba(79, 70, 229, 0.2);
-  color: #818cf8;
+  background: #111726;
+  border: 1px solid #2d3b55;
+  color: #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
+.upload-text-group {
+  flex: 1;
+}
+
 .upload-title {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: #cbd5e1;
+  color: #f1f5f9;
   margin: 0;
 }
 
 .upload-hint {
-  font-size: 11px;
-  color: #64748b;
+  font-size: 12px;
+  color: #cbd5e1;
   margin: 2px 0 0;
 }
 
@@ -398,7 +709,8 @@ defineExpose({
 }
 
 .file-card.is-private-card {
-  background: rgba(245, 158, 11, 0.05);
+  background: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .file-thumb {
@@ -424,7 +736,7 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: #cbd5e1;
 }
 
 .doc-icon.pdf { color: #f87171; }
@@ -432,7 +744,7 @@ defineExpose({
 .doc-icon.zip { color: #fbbf24; }
 
 .file-ext {
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -453,7 +765,7 @@ defineExpose({
 
 .file-size {
   font-size: 11px;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .file-options {
@@ -483,7 +795,7 @@ defineExpose({
 .file-remove-btn {
   background: transparent;
   border: none;
-  color: #64748b;
+  color: #94a3b8;
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
@@ -513,20 +825,20 @@ defineExpose({
   width: 100%;
   padding: 10px 16px;
   background: #4f46e5;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   color: #ffffff;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   font-family: inherit;
 }
 
 .submit-btn:hover:not(:disabled) {
   background: #4338ca;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .submit-btn:disabled {

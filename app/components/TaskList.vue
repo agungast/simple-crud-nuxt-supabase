@@ -8,15 +8,15 @@
   <!-- Empty State -->
   <div v-else-if="tasks.length === 0" class="empty-state">
     <div class="empty-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
         <line x1="3" y1="9" x2="21" y2="9"></line>
         <line x1="3" y1="15" x2="21" y2="15"></line>
         <line x1="9" y1="9" x2="9" y2="21"></line>
       </svg>
     </div>
-    <p class="empty-title">Belum ada tugas</p>
-    <p class="empty-desc">Tambahkan tugas pertama Anda menggunakan form di samping.</p>
+    <p class="empty-title">Belum ada tugas terdaftar</p>
+    <p class="empty-desc">Tambahkan tugas pertama Anda menggunakan form di sebelah kiri.</p>
   </div>
 
   <!-- Daftar Tugas dengan Paginasi -->
@@ -25,7 +25,9 @@
       <thead>
         <tr>
           <th class="col-no">#</th>
-          <th class="col-task">Tugas</th>
+          <th class="col-task">Tugas & Tag</th>
+          <th class="col-priority">Prioritas</th>
+          <th class="col-due">Tenggat</th>
           <th class="col-status">Status</th>
           <th class="col-img">Lampiran</th>
           <th class="col-action">Aksi</th>
@@ -40,6 +42,7 @@
           @toggle="emit('toggle', $event)"
           @delete="emit('delete', $event)"
           @edit="emit('edit', $event)"
+          @update-status="emit('update-status', $event)"
           @open-lightbox="emit('open-lightbox', $event)"
         />
       </tbody>
@@ -101,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Task } from '~/types/task'
+import type { Task, TaskEditPayload, TaskStatus } from '~/types/task'
 
 // Props
 const props = defineProps<{
@@ -113,7 +116,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'toggle', task: Task): void
   (e: 'delete', task: Task): void
-  (e: 'edit', payload: { task: Task; newName: string }): void
+  (e: 'edit', payload: { task: Task; payload: string | TaskEditPayload }): void
+  (e: 'update-status', payload: { task: Task; status: TaskStatus }): void
   (e: 'open-lightbox', url: string): void
 }>()
 
@@ -168,8 +172,9 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   justify-content: center;
   gap: 10px;
   padding: 36px 20px;
-  color: #94a3b8;
-  font-size: 13px;
+  color: #cbd5e1;
+  font-size: 13.5px;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .pulse-spinner {
@@ -191,38 +196,40 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px 24px;
+  padding: 40px 24px;
   text-align: center;
-  gap: 8px;
+  gap: 10px;
   min-height: 380px;
   flex: 1;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .empty-icon {
   width: 52px;
   height: 52px;
-  background: rgba(255, 255, 255, 0.03);
+  background: #111726;
   border: 1px solid #1f2a3f;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
-  margin-bottom: 8px;
+  color: #f1f5f9;
+  margin-bottom: 6px;
 }
 
 .empty-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #f1f5f9;
   margin: 0;
 }
 
 .empty-desc {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 13px;
+  color: #cbd5e1;
   margin: 0;
-  max-width: 260px;
+  max-width: 280px;
+  line-height: 1.4;
 }
 
 /* Table */
@@ -233,6 +240,7 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   justify-content: space-between;
   min-height: 380px;
   flex: 1;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .data-table {
@@ -242,8 +250,8 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .data-table thead tr {
-  border-bottom: 1px solid #1c273c;
-  height: 38px;
+  border-bottom: 1px solid #1f2a3f;
+  height: 40px;
   background: #0d1422;
 }
 
@@ -254,19 +262,21 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 .data-table th {
   padding: 10px 16px;
   text-align: left;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #64748b;
-  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 600;
+  color: #cbd5e1;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.col-no     { width: 48px; }
-.col-task   { min-width: 180px; }
-.col-status { width: 110px; }
-.col-img    { width: 110px; }
-.col-action { width: 80px; text-align: center; }
+.col-no       { width: 44px; }
+.col-task     { min-width: 170px; }
+.col-priority { width: 105px; }
+.col-due      { width: 105px; }
+.col-status   { width: 115px; }
+.col-img      { width: 100px; }
+.col-action   { width: 80px; text-align: center; }
 
 /* Table Footer */
 .table-footer {
@@ -274,7 +284,7 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-top: 1px solid #1c273c;
+  border-top: 1px solid #1f2a3f;
   background: #0d1422;
   flex-wrap: wrap;
   gap: 12px;
@@ -288,12 +298,12 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .footer-info {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 12.5px;
+  color: #cbd5e1;
 }
 
 .text-highlight {
-  color: #cbd5e1;
+  color: #f8fafc;
   font-weight: 600;
 }
 
@@ -310,15 +320,15 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .stat-pill.done {
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(34, 197, 94, 0.12);
   color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.25);
 }
 
 .stat-pill.active {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(245, 158, 11, 0.12);
   color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 /* Pagination Controls */
@@ -329,10 +339,10 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .page-nav-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
-  background: #090d16;
+  background: #111726;
   border: 1px solid #1f2a3f;
   color: #cbd5e1;
   display: flex;
@@ -343,13 +353,13 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .page-nav-btn:hover:not(:disabled) {
-  background: #111726;
+  background: #172136;
   border-color: #4f46e5;
   color: #ffffff;
 }
 
 .page-nav-btn:disabled {
-  opacity: 0.3;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
@@ -360,13 +370,13 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .page-num-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
-  background: #090d16;
+  background: #111726;
   border: 1px solid #1f2a3f;
-  color: #94a3b8;
-  font-size: 11.5px;
+  color: #cbd5e1;
+  font-size: 12px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -377,7 +387,7 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .page-num-btn:hover:not(.active) {
-  border-color: #334155;
+  border-color: #2e3e5e;
   color: #f1f5f9;
 }
 

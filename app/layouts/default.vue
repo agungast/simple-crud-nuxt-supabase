@@ -177,20 +177,20 @@ onUnmounted(() => {
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background: #0f172a;
-  color: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  background: #090d16;
+  color: #f1f5f9;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* ─── SIDEBAR ─────────────────────────────────────────────────────────────── */
 .sidebar {
   width: 240px;
   min-width: 240px;
-  background: #1e293b;
-  border-right: 1px solid #334155;
+  background: #0f172a;
+  border-right: 1px solid #1f2a3f;
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.26s ease;
+  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: sticky;
   top: 0;
   height: 100vh;
@@ -207,18 +207,17 @@ onUnmounted(() => {
 .sidebar.sidebar-collapsed:hover {
   width: 240px;
   min-width: 240px;
-  box-shadow: 12px 0 35px rgba(0, 0, 0, 0.65), 0 0 20px rgba(99, 102, 241, 0.15);
+  box-shadow: 16px 0 40px rgba(0, 0, 0, 0.7);
 }
 
 /* Logo Area */
 .sidebar-logo {
   display: flex;
   align-items: center;
-  padding: 16px 14px;
-  border-bottom: 1px solid #334155;
+  padding: 16px 16px;
+  border-bottom: 1px solid #1f2a3f;
   height: 60px;
   box-sizing: border-box;
-  transition: all 0.2s ease;
 }
 
 .sidebar.sidebar-collapsed:not(:hover) .sidebar-logo {
@@ -235,20 +234,21 @@ onUnmounted(() => {
 .logo-icon-wrap {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: #111726;
+  border: 1px solid #2d3b55;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: #f1f5f9;
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .logo-text {
   font-size: 16px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #f8fafc;
   letter-spacing: -0.3px;
   white-space: nowrap;
 }
@@ -260,20 +260,20 @@ onUnmounted(() => {
 /* Navigation */
 .sidebar-nav {
   flex: 1;
-  padding: 16px 8px;
+  padding: 16px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 .nav-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #475569;
-  letter-spacing: 0.8px;
-  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+  padding: 6px 10px 4px;
   margin: 0;
   white-space: nowrap;
 }
@@ -287,25 +287,29 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: 8px;
   color: #94a3b8;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .nav-item:hover {
-  background: rgba(99, 102, 241, 0.1);
-  color: #c7d2fe;
+  background: #172136;
+  color: #f1f5f9;
+  border-color: #243048;
 }
 
 .nav-item.active {
-  background: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
+  background: #1a253c;
+  border-color: #2e3e5e;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .nav-item svg {
@@ -314,28 +318,31 @@ onUnmounted(() => {
 
 .nav-badge {
   margin-left: auto;
-  background: rgba(99, 102, 241, 0.2);
-  color: #818cf8;
+  background: #111726;
+  border: 1px solid #1f2a3f;
+  color: #cbd5e1;
   font-size: 11px;
   font-weight: 600;
   padding: 2px 7px;
-  border-radius: 20px;
+  border-radius: 12px;
 }
 
 .nav-badge.success {
-  background: rgba(34, 197, 94, 0.15);
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.25);
   color: #4ade80;
 }
 
 .nav-badge.warning {
-  background: rgba(251, 146, 60, 0.15);
-  color: #fb923c;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
 }
 
 /* Ketika collapsed & TIDAK di-hover: item navigasi terpusat dan teks tersembunyi */
 .sidebar.sidebar-collapsed:not(:hover) .nav-item {
   justify-content: center;
-  padding: 12px 0;
+  padding: 11px 0;
 }
 
 .sidebar.sidebar-collapsed:not(:hover) .nav-item-text,
@@ -346,11 +353,11 @@ onUnmounted(() => {
 /* Sidebar Footer */
 .sidebar-footer {
   padding: 14px 12px;
-  border-top: 1px solid #334155;
+  border-top: 1px solid #1f2a3f;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  transition: all 0.2s ease;
+  gap: 10px;
+  background: #0b1120;
 }
 
 .sidebar.sidebar-collapsed:not(:hover) .sidebar-footer {
@@ -366,18 +373,19 @@ onUnmounted(() => {
 
 .user-info.clickable {
   cursor: pointer;
-  padding: 4px 6px;
-  margin: -4px -6px;
+  padding: 6px 8px;
   border-radius: 8px;
-  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .user-info.clickable:hover {
-  background: rgba(99, 102, 241, 0.12);
+  background: #172136;
+  border-color: #243048;
 }
 
 .user-info.clickable:hover .edit-hint-icon {
-  color: #818cf8;
+  color: #f1f5f9;
   opacity: 1;
 }
 
@@ -390,24 +398,22 @@ onUnmounted(() => {
 .user-avatar {
   width: 34px;
   height: 34px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: #111726;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  color: #ffffff;
+  color: #f1f5f9;
   flex-shrink: 0;
-  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
   overflow: hidden;
-  border: 1.5px solid #334155;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  border: 1.5px solid #2d3b55;
+  transition: border-color 0.15s ease;
 }
 
 .user-info.clickable:hover .user-avatar {
-  transform: scale(1.05);
-  border-color: #6366f1;
+  border-color: #4f46e5;
 }
 
 .sidebar-avatar-img {
@@ -429,8 +435,8 @@ onUnmounted(() => {
 }
 
 .edit-hint-icon {
-  color: #64748b;
-  opacity: 0.6;
+  color: #94a3b8;
+  opacity: 0.7;
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
@@ -442,7 +448,7 @@ onUnmounted(() => {
 .user-name {
   font-size: 13px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #f1f5f9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -450,7 +456,7 @@ onUnmounted(() => {
 
 .user-role {
   font-size: 11px;
-  color: #64748b;
+  color: #cbd5e1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -463,19 +469,20 @@ onUnmounted(() => {
   width: 100%;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  background: rgba(239, 68, 68, 0.08);
-  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.06);
+  color: #fca5a5;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  font-family: inherit;
 }
 
 .logout-btn:hover {
-  background: rgba(239, 68, 68, 0.16);
+  background: rgba(239, 68, 68, 0.15);
   border-color: rgba(239, 68, 68, 0.4);
-  color: #ef4444;
+  color: #f87171;
 }
 
 .sidebar.sidebar-collapsed:not(:hover) .logout-btn {
@@ -497,6 +504,7 @@ onUnmounted(() => {
   flex-direction: column;
   min-width: 0;
   overflow-x: hidden;
+  background: #090d16;
 }
 
 @media (max-width: 640px) {

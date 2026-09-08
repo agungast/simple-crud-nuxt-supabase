@@ -1,57 +1,50 @@
 <template>
   <main class="page-content">
-    <!-- Stat Cards -->
-    <div class="stat-cards">
-      <div class="stat-card">
-        <div class="stat-icon blue">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="8" y1="6" x2="21" y2="6"></line>
-            <line x1="8" y1="12" x2="21" y2="12"></line>
-            <line x1="8" y1="18" x2="21" y2="18"></line>
-            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-            <line x1="3" y1="18" x2="3.01" y2="18"></line>
-          </svg>
+    <!-- Executive Segmented Metric Header -->
+    <div class="metrics-container">
+      <div class="metric-segment">
+        <div class="metric-top">
+          <span class="metric-label">Total Tugas</span>
+          <span class="metric-dot-indicator total"></span>
         </div>
-        <div class="stat-info">
-          <span class="stat-label">Total Tugas</span>
-          <span class="stat-value">{{ tasks.length }}</span>
+        <div class="metric-main">
+          <span class="metric-value">{{ tasks.length }}</span>
+          <span class="metric-unit">tugas terdaftar</span>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon green">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
+
+      <div class="metric-segment">
+        <div class="metric-top">
+          <span class="metric-label">Tugas Selesai</span>
+          <span class="metric-pill success">{{ completedCount }} selesai</span>
         </div>
-        <div class="stat-info">
-          <span class="stat-label">Selesai</span>
-          <span class="stat-value">{{ completedCount }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon orange">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">Aktif</span>
-          <span class="stat-value">{{ activeCount }}</span>
+        <div class="metric-main">
+          <span class="metric-value text-success">{{ completedCount }}</span>
+          <span class="metric-sub">{{ tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0 }}% rasio</span>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon purple">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"></line>
-            <line x1="12" y1="20" x2="12" y2="4"></line>
-            <line x1="6" y1="20" x2="6" y2="14"></line>
-          </svg>
+
+      <div class="metric-segment">
+        <div class="metric-top">
+          <span class="metric-label">Tugas Aktif</span>
+          <span class="metric-pill warning">{{ activeCount }} aktif</span>
         </div>
-        <div class="stat-info">
-          <span class="stat-label">Progress</span>
-          <span class="stat-value">{{ progressPercent }}%</span>
+        <div class="metric-main">
+          <span class="metric-value text-warning">{{ activeCount }}</span>
+          <span class="metric-sub">perlu diselesaikan</span>
+        </div>
+      </div>
+
+      <div class="metric-segment progress-segment">
+        <div class="metric-top">
+          <span class="metric-label">Tingkat Penyelesaian</span>
+          <span class="metric-pct-badge">{{ progressPercent }}%</span>
+        </div>
+        <div class="metric-progress-wrapper">
+          <div class="metric-progress-track">
+            <div class="metric-progress-fill" :style="{ transform: `scaleX(${progressPercent / 100})` }"></div>
+          </div>
+          <span class="metric-progress-caption">{{ completedCount }} dari {{ tasks.length }} tugas rampung</span>
         </div>
       </div>
     </div>
@@ -62,7 +55,7 @@
       <div class="content-card form-card">
         <div class="card-header">
           <div class="card-title-group">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="16"></line>
               <line x1="8" y1="12" x2="16" y2="12"></line>
@@ -79,16 +72,51 @@
       <div class="content-card table-card">
         <div class="card-header">
           <div class="card-title-group">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="3" y1="9" x2="21" y2="9"></line>
               <line x1="3" y1="15" x2="21" y2="15"></line>
               <line x1="9" y1="9" x2="9" y2="21"></line>
             </svg>
-            <h2 class="card-title">Daftar Tugas Anda</h2>
+            <h2 class="card-title">Daftar Tugas</h2>
           </div>
           <div class="card-header-actions">
-            <span class="card-badge">{{ tasks.length }} tugas</span>
+            <!-- Segmented View Switcher: Tabel vs Kanban -->
+            <div class="view-switcher-group" role="group" aria-label="Pilih Tampilan">
+              <button
+                type="button"
+                class="view-switch-btn"
+                :class="{ active: viewMode === 'table' }"
+                @click="taskStore.setViewMode('table')"
+                id="view-switch-table"
+                title="Tampilan Tabel Data"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="3" y1="9" x2="21" y2="9"></line>
+                  <line x1="3" y1="15" x2="21" y2="15"></line>
+                  <line x1="9" y1="9" x2="9" y2="21"></line>
+                </svg>
+                <span>Tabel</span>
+              </button>
+              <button
+                type="button"
+                class="view-switch-btn"
+                :class="{ active: viewMode === 'kanban' }"
+                @click="taskStore.setViewMode('kanban')"
+                id="view-switch-kanban"
+                title="Tampilan Papan Kanban"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="9" y1="3" x2="9" y2="21"></line>
+                  <line x1="15" y1="3" x2="15" y2="21"></line>
+                </svg>
+                <span>Kanban</span>
+              </button>
+            </div>
+
+            <span class="card-badge">{{ filteredTasks.length }} tugas</span>
             <!-- Tombol Download Backup -->
             <div class="backup-menu-wrap" ref="backupMenuRef">
               <button
@@ -97,12 +125,12 @@
                 :disabled="backupLoading"
                 title="Download Backup CSV"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                {{ backupLoading ? 'Memuat...' : 'Backup' }}
+                {{ backupLoading ? 'Memuat...' : 'Backup CSV' }}
               </button>
 
               <!-- Dropdown daftar backup -->
@@ -142,14 +170,28 @@
           </div>
         </div>
         <div class="card-body no-padding">
-          <TaskList
-            :tasks="tasks"
-            :pending="pending"
-            @toggle="handleToggleTask"
-            @delete="handleDeleteTask"
-            @edit="handleEditTask"
-            @open-lightbox="taskStore.openLightbox"
-          />
+          <Transition name="view-fade" mode="out-in">
+            <TaskList
+              v-if="viewMode === 'table'"
+              key="table"
+              :tasks="filteredTasks"
+              :pending="pending"
+              @toggle="handleToggleTask"
+              @delete="handleDeleteTask"
+              @edit="handleEditTask"
+              @update-status="handleUpdateStatus"
+              @open-lightbox="taskStore.openLightbox"
+            />
+            <KanbanBoard
+              v-else
+              key="kanban"
+              :tasks="filteredTasks"
+              :pending="pending"
+              @edit="handleEditTask"
+              @delete="handleDeleteTask"
+              @update-status="handleUpdateStatus"
+            />
+          </Transition>
         </div>
       </div>
     </div>
@@ -162,13 +204,16 @@
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
-          <h2 class="card-title">Realtime Activity Log</h2>
+          <h2 class="card-title">Realtime Activity Feed</h2>
         </div>
-        <span class="realtime-dot" :class="{ connected: isRealtimeConnected }" :title="isRealtimeConnected ? 'Terhubung' : 'Menghubungkan...'"></span>
+        <div class="realtime-status-pill" :class="{ connected: isRealtimeConnected }">
+          <span class="realtime-dot" :class="{ connected: isRealtimeConnected }"></span>
+          <span>{{ isRealtimeConnected ? 'Live Realtime' : 'Menghubungkan...' }}</span>
+        </div>
       </div>
       <div class="card-body activity-body">
         <div v-if="activityLogs.length === 0" class="log-empty">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
@@ -192,7 +237,7 @@
 
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/taskStore'
-import type { Task, TaskFormSubmitPayload } from '~/types/task'
+import type { Task, TaskFormSubmitPayload, TaskEditPayload, TaskStatus } from '~/types/task'
 
 // ─── Pinia Store ────────────────────────────────────────────────────────────
 const taskStore = useTaskStore()
@@ -209,7 +254,9 @@ const {
   cronLoading,
   completedCount,
   activeCount,
-  progressPercent
+  progressPercent,
+  viewMode,
+  filteredTasks
 } = storeToRefs(taskStore)
 
 // ─── Template Refs ──────────────────────────────────────────────────────────
@@ -218,7 +265,7 @@ const backupMenuRef = ref<HTMLDivElement | null>(null)
 
 // ─── Event Handlers ─────────────────────────────────────────────────────────
 const handleFormSubmit = async (payload: TaskFormSubmitPayload): Promise<void> => {
-  await taskStore.addTask(payload.taskText, payload.files)
+  await taskStore.addTask(payload)
   if (!taskStore.uploading) {
     taskFormRef.value?.resetForm()
   }
@@ -228,8 +275,12 @@ const handleToggleTask = (task: Task): void => {
   taskStore.toggleTask(task)
 }
 
-const handleEditTask = ({ task, newName }: { task: Task; newName: string }): void => {
-  taskStore.editTask(task, newName)
+const handleUpdateStatus = ({ task, status }: { task: Task; status: TaskStatus }): void => {
+  taskStore.updateTaskStatus(task, status)
+}
+
+const handleEditTask = ({ task, payload }: { task: Task; payload: string | TaskEditPayload }): void => {
+  taskStore.editTask(task, payload)
 }
 
 const handleDeleteTask = (task: Task): void => {
@@ -262,65 +313,151 @@ onUnmounted(() => {
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+  background: #090d16;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* ─── STAT CARDS ──────────────────────────────────────────────────────────── */
-.stat-cards {
+/* ─── EXECUTIVE BENTO METRIC HEADER ───────────────────────────────────────── */
+.metrics-container {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-.stat-card {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #0f172a;
+  border: 1px solid #1f2a3f;
   border-radius: 12px;
-  padding: 18px 20px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  transition: all 0.2s ease;
+  overflow: hidden;
 }
 
-.stat-card:hover {
-  border-color: #475569;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-icon.blue   { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
-.stat-icon.green  { background: rgba(34, 197, 94, 0.15);  color: #4ade80; }
-.stat-icon.orange { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
-.stat-icon.purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
-
-.stat-info {
+.metric-segment {
+  padding: 16px 20px;
+  border-right: 1px solid #1f2a3f;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  justify-content: space-between;
+  gap: 8px;
+  transition: background 0.15s ease;
 }
 
-.stat-label {
+.metric-segment:last-child {
+  border-right: none;
+}
+
+.metric-segment:hover {
+  background: #111a2f;
+}
+
+.metric-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.metric-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.metric-dot-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3b82f6;
+}
+
+.metric-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.metric-pill.success {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.metric-pill.warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.metric-pct-badge {
   font-size: 12px;
-  color: #64748b;
+  font-weight: 700;
+  color: #f1f5f9;
+  background: #1e293b;
+  border: 1px solid #2e3e5e;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.metric-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.metric-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.metric-value.text-success {
+  color: #4ade80;
+}
+
+.metric-value.text-warning {
+  color: #fbbf24;
+}
+
+.metric-unit {
+  font-size: 12px;
+  color: #94a3b8;
   font-weight: 500;
 }
 
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #f1f5f9;
-  line-height: 1;
+.metric-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Progress Segment */
+.metric-progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metric-progress-track {
+  height: 6px;
+  background: #1e293b;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.metric-progress-fill {
+  width: 100%;
+  height: 100%;
+  background: #4f46e5;
+  border-radius: 999px;
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.metric-progress-caption {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 /* ─── CONTENT GRID ────────────────────────────────────────────────────────── */
@@ -333,9 +470,9 @@ onUnmounted(() => {
 
 /* ─── CARD ────────────────────────────────────────────────────────────────── */
 .content-card {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 14px;
+  background: #0f172a;
+  border: 1px solid #1f2a3f;
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -345,23 +482,25 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
-  border-bottom: 1px solid #334155;
+  padding: 16px 20px;
+  border-bottom: 1px solid #1f2a3f;
+  background: #0d1422;
   flex-shrink: 0;
 }
 
 .card-title-group {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #94a3b8;
+  gap: 9px;
+  color: #cbd5e1;
 }
 
 .card-title {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #f1f5f9;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .card-header-actions {
@@ -370,14 +509,74 @@ onUnmounted(() => {
   gap: 10px;
 }
 
-.card-badge {
+/* ─── SEGMENTED VIEW SWITCHER ─────────────────────────────────────────────── */
+.view-switcher-group {
+  display: inline-flex;
+  align-items: center;
+  background: #090d16;
+  border: 1px solid #1f2a3f;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  color: #64748b;
-  background: rgba(100, 116, 139, 0.1);
-  border: 1px solid #334155;
-  padding: 3px 10px;
-  border-radius: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.view-switch-btn:hover:not(.active) {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.view-switch-btn.active {
+  color: #f1f5f9;
+  background: #172136;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.view-switch-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.4);
+}
+
+/* ─── VIEW TRANSITION ─────────────────────────────────────────────────────── */
+.view-fade-enter-active,
+.view-fade-leave-active {
+  transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.view-fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.view-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.card-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+  background: #111726;
+  border: 1px solid #1f2a3f;
+  padding: 3px 9px;
+  border-radius: 12px;
 }
 
 .card-body {
@@ -403,20 +602,22 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 5px 11px;
   font-size: 12px;
   font-weight: 600;
-  border-radius: 7px;
-  border: 1px solid #334155;
-  background: rgba(99, 102, 241, 0.1);
-  color: #818cf8;
+  border-radius: 6px;
+  border: 1px solid #2d3b55;
+  background: #111726;
+  color: #f1f5f9;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  font-family: inherit;
 }
 
 .backup-btn:hover:not(:disabled) {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: #6366f1;
+  background: #172136;
+  border-color: #4f46e5;
+  color: #ffffff;
 }
 
 .backup-btn:disabled {
@@ -428,11 +629,11 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  width: 260px;
-  background: #1e293b;
-  border: 1px solid #334155;
+  width: 270px;
+  background: #111726;
+  border: 1px solid #1f2a3f;
   border-radius: 10px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
   z-index: 50;
   overflow: hidden;
 }
@@ -441,22 +642,23 @@ onUnmounted(() => {
   padding: 10px 14px;
   font-size: 11px;
   font-weight: 700;
-  color: #64748b;
+  color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid #334155;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #1f2a3f;
+  background: #0d1422;
 }
 
 .backup-loading, .backup-empty {
   padding: 16px 14px;
   font-size: 12px;
-  color: #94a3b8;
+  color: #cbd5e1;
   text-align: center;
 }
 
 .backup-hint {
   font-size: 11px;
-  color: #64748b;
+  color: #94a3b8;
   margin-top: 4px;
   display: block;
 }
@@ -481,7 +683,7 @@ onUnmounted(() => {
 }
 
 .backup-item:hover {
-  background: rgba(99, 102, 241, 0.12);
+  background: #172136;
   color: #f1f5f9;
 }
 
@@ -501,52 +703,76 @@ onUnmounted(() => {
 }
 
 .backup-item-meta {
-  font-size: 10px;
-  color: #64748b;
+  font-size: 11.5px;
+  color: #94a3b8;
 }
 
 .backup-item-dl {
-  color: #6366f1;
+  color: #cbd5e1;
   opacity: 0.7;
 }
 
 .backup-item:hover .backup-item-dl {
   opacity: 1;
+  color: #ffffff;
 }
 
 /* ─── ACTIVITY LOG ────────────────────────────────────────────────────────── */
+.realtime-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  background: #111726;
+  border: 1px solid #1f2a3f;
+  padding: 3px 9px;
+  border-radius: 12px;
+}
+
+.realtime-status-pill.connected {
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
 .realtime-dot {
-  width: 10px;
-  height: 10px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #334155;
-  border: 2px solid #475569;
+  background: #64748b;
   flex-shrink: 0;
-  transition: all 0.4s ease;
+  position: relative;
 }
 
 .realtime-dot.connected {
-  background: #4ade80;
-  border-color: #22c55e;
-  box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
-  animation: pulse-green 2s ease infinite;
+  background: #22c55e;
 }
 
-@keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 6px rgba(74, 222, 128, 0.5); }
-  50%       { box-shadow: 0 0 14px rgba(74, 222, 128, 0.8); }
+.realtime-dot.connected::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(34, 197, 94, 0.5);
+  animation: radar-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes radar-ping {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0; }
 }
 
 .activity-body {
   padding: 0 !important;
-  max-height: 320px;
+  max-height: 280px;
   overflow-y: auto;
 }
 
 .log-empty {
   padding: 32px 16px;
   text-align: center;
-  color: #64748b;
+  color: #94a3b8;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -564,13 +790,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 20px;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  padding: 11px 20px;
+  border-bottom: 1px solid #172136;
   transition: background 0.15s ease;
 }
 
 .log-item:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: #0d1422;
 }
 
 .log-item:last-child {
@@ -578,16 +804,16 @@ onUnmounted(() => {
 }
 
 .log-badge {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   padding: 2px 7px;
-  border-radius: 5px;
-  letter-spacing: 0.5px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
 }
 
-.log-badge.INSERT { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
-.log-badge.UPDATE { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
-.log-badge.DELETE { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.log-badge.INSERT { background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.25); }
+.log-badge.UPDATE { background: rgba(79, 70, 229, 0.12); color: #a5b4fc; border: 1px solid rgba(79, 70, 229, 0.25); }
+.log-badge.DELETE { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.25); }
 
 .log-content {
   flex: 1;
@@ -599,7 +825,7 @@ onUnmounted(() => {
 
 .log-task {
   font-size: 13px;
-  color: #cbd5e1;
+  color: #f1f5f9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -608,96 +834,8 @@ onUnmounted(() => {
 
 .log-time {
   font-size: 11px;
-  color: #64748b;
+  color: #94a3b8;
   white-space: nowrap;
-}
-
-/* ─── CRON CARD ───────────────────────────────────────────────────────────── */
-.cron-status-badge {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-}
-
-.cron-ok { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
-.cron-fail { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-.cron-pending { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
-
-.cron-info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.cron-info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.cron-info-item.cron-info-full {
-  grid-column: span 2;
-}
-
-.cron-info-label {
-  font-size: 11px;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.cron-info-value {
-  font-size: 13px;
-  color: #cbd5e1;
-  font-weight: 500;
-}
-
-.cron-info-value.mono {
-  font-family: monospace;
-}
-
-.cron-tz {
-  font-size: 10px;
-  color: #64748b;
-}
-
-.cron-message {
-  color: #94a3b8;
-  font-size: 12px;
-  background: rgba(15, 23, 42, 0.5);
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #334155;
-}
-
-.cron-refresh-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 8px;
-  border: 1px solid #334155;
-  background: rgba(15, 23, 42, 0.6);
-  color: #94a3b8;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cron-refresh-btn:hover:not(:disabled) {
-  background: #1e293b;
-  border-color: #6366f1;
-  color: #f1f5f9;
-}
-
-.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  100% { transform: rotate(360deg); }
 }
 
 /* ─── RESPONSIVE ──────────────────────────────────────────────────────────── */
@@ -708,8 +846,11 @@ onUnmounted(() => {
 }
 
 @media (max-width: 900px) {
-  .stat-cards {
+  .metrics-container {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .metric-segment {
+    border-bottom: 1px solid #1f2a3f;
   }
 }
 
@@ -718,16 +859,8 @@ onUnmounted(() => {
     padding: 16px;
   }
 
-  .stat-cards {
+  .metrics-container {
     grid-template-columns: 1fr;
-  }
-
-  .cron-info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .cron-info-item.cron-info-full {
-    grid-column: span 1;
   }
 }
 </style>
