@@ -78,16 +78,33 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
+  // Helper parsing tags agar selalu berupa string[]
+  function parseTags(rawTags: any): string[] {
+    if (!rawTags) return []
+    if (Array.isArray(rawTags)) return rawTags.map(t => String(t).trim()).filter(Boolean)
+    if (typeof rawTags === 'string') {
+      return rawTags
+        .replace(/^\{|\}$/g, '')
+        .split(',')
+        .map(t => t.replace(/["']/g, '').trim())
+        .filter(Boolean)
+    }
+    return []
+  }
+
   // ─── Getters (Computed) ───────────────────────────────────────────────────────
   const filteredTasks = computed<Task[]>(() => {
+    const list = Array.isArray(tasks.value) ? tasks.value : []
     const q = searchQuery.value.trim().toLowerCase()
-    if (!q) return tasks.value
-    return tasks.value.filter((t: Task) => {
+    if (!q) return list
+    return list.filter((t: Task) => {
+      if (!t) return false
       const name = (t.title || t.task || '').toLowerCase()
       const matchesName = name.includes(q)
       const matchesPriority = (t.priority || '').toLowerCase().includes(q)
       const matchesStatus = (t.status || '').toLowerCase().includes(q)
-      const matchesTags = (t.tags || []).some(tag => tag.toLowerCase().includes(q))
+      const tagsArray = parseTags(t.tags)
+      const matchesTags = tagsArray.some(tag => tag.toLowerCase().includes(q))
       return matchesName || matchesPriority || matchesStatus || matchesTags
     })
   })
@@ -100,7 +117,9 @@ export const useTaskStore = defineStore('task', () => {
       DONE: [],
       ARCHIVED: []
     }
-    filteredTasks.value.forEach(task => {
+    const list = Array.isArray(filteredTasks.value) ? filteredTasks.value : []
+    list.forEach(task => {
+      if (!task) return
       const s = task.status || (task.is_completed ? 'DONE' : 'TODO')
       if (groups[s]) {
         groups[s].push(task)
@@ -171,7 +190,7 @@ export const useTaskStore = defineStore('task', () => {
             task: taskName,
             priority: t.priority || 'MEDIUM',
             status: t.status || (t.is_completed ? 'DONE' : 'TODO'),
-            tags: t.tags || [],
+            tags: parseTags(t.tags),
             estimated_hours: t.estimated_hours || 0,
             due_date: t.due_date || null,
             cover_image_url: t.cover_image_url || t.image_url || null,

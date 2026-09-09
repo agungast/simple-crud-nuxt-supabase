@@ -170,10 +170,8 @@
           </div>
         </div>
         <div class="card-body no-padding">
-          <Transition name="view-fade" mode="out-in">
+          <div v-if="viewMode === 'table'" key="table" class="view-panel">
             <TaskList
-              v-if="viewMode === 'table'"
-              key="table"
               :tasks="filteredTasks"
               :pending="pending"
               @toggle="handleToggleTask"
@@ -182,16 +180,16 @@
               @update-status="handleUpdateStatus"
               @open-lightbox="taskStore.openLightbox"
             />
+          </div>
+          <div v-else key="kanban" class="view-panel">
             <KanbanBoard
-              v-else
-              key="kanban"
               :tasks="filteredTasks"
               :pending="pending"
               @edit="handleEditTask"
               @delete="handleDeleteTask"
               @update-status="handleUpdateStatus"
             />
-          </Transition>
+          </div>
         </div>
       </div>
     </div>
@@ -553,20 +551,21 @@ onUnmounted(() => {
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.4);
 }
 
-/* ─── VIEW TRANSITION ─────────────────────────────────────────────────────── */
-.view-fade-enter-active,
-.view-fade-leave-active {
-  transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+/* ─── VIEW PANEL ANIMATION ────────────────────────────────────────────────── */
+.view-panel {
+  width: 100%;
+  animation: viewPanelFade 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.view-fade-enter-from {
-  opacity: 0;
-  transform: translateY(4px);
-}
-
-.view-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
+@keyframes viewPanelFade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .card-badge {

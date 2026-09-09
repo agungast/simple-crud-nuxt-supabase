@@ -98,8 +98,10 @@ const columnDefinitions: ColumnDefinition[] = [
 ]
 
 const populatedColumns = computed(() => {
+  const list = Array.isArray(props.tasks) ? props.tasks : []
   return columnDefinitions.map(def => {
-    const colTasks = props.tasks.filter(t => {
+    const colTasks = list.filter(t => {
+      if (!t) return false
       const s = t.status || (t.is_completed ? 'DONE' : 'TODO')
       return s === def.status
     })
@@ -136,7 +138,8 @@ const onDrop = (targetStatus: TaskStatus, event: DragEvent) => {
   const taskId = event.dataTransfer?.getData('text/plain')
   if (!taskId) return
 
-  const targetTask = props.tasks.find(t => String(t.id) === String(taskId))
+  const list = Array.isArray(props.tasks) ? props.tasks : []
+  const targetTask = list.find(t => t && String(t.id) === String(taskId))
   if (targetTask) {
     const currentStatus = targetTask.status || (targetTask.is_completed ? 'DONE' : 'TODO')
     if (currentStatus !== targetStatus) {

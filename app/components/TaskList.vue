@@ -1,103 +1,105 @@
 <template>
-  <!-- Loading State -->
-  <div v-if="pending" class="table-status">
-    <span class="pulse-spinner"></span>
-    Memuat data tugas...
-  </div>
-
-  <!-- Empty State -->
-  <div v-else-if="tasks.length === 0" class="empty-state">
-    <div class="empty-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="3" y1="9" x2="21" y2="9"></line>
-        <line x1="3" y1="15" x2="21" y2="15"></line>
-        <line x1="9" y1="9" x2="9" y2="21"></line>
-      </svg>
+  <div class="task-list-root">
+    <!-- Loading State -->
+    <div v-if="pending" class="table-status">
+      <span class="pulse-spinner"></span>
+      Memuat data tugas...
     </div>
-    <p class="empty-title">Belum ada tugas terdaftar</p>
-    <p class="empty-desc">Tambahkan tugas pertama Anda menggunakan form di sebelah kiri.</p>
-  </div>
 
-  <!-- Daftar Tugas dengan Paginasi -->
-  <div v-else class="table-wrapper">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th class="col-no">#</th>
-          <th class="col-task">Tugas & Tag</th>
-          <th class="col-priority">Prioritas</th>
-          <th class="col-due">Tenggat</th>
-          <th class="col-status">Status</th>
-          <th class="col-img">Lampiran</th>
-          <th class="col-action">Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <TaskItem
-          v-for="(task, index) in paginatedTasks"
-          :key="task.id"
-          :task="task"
-          :index="(currentPage - 1) * pageSize + index + 1"
-          @toggle="emit('toggle', $event)"
-          @delete="emit('delete', $event)"
-          @edit="emit('edit', $event)"
-          @update-status="emit('update-status', $event)"
-          @open-lightbox="emit('open-lightbox', $event)"
-        />
-      </tbody>
-    </table>
-
-    <!-- Table Footer with Pagination Controls -->
-    <div class="table-footer">
-      <div class="footer-left">
-        <span class="footer-info">
-          Menampilkan <strong class="text-highlight">{{ itemRangeStart }}–{{ itemRangeEnd }}</strong> dari <strong class="text-highlight">{{ tasks.length }}</strong> tugas
-        </span>
-        <div class="footer-stats">
-          <span class="stat-pill done">{{ completedCount }} Selesai</span>
-          <span class="stat-pill active">{{ activeCount }} Aktif</span>
-        </div>
+    <!-- Empty State -->
+    <div v-else-if="tasks.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="3" y1="15" x2="21" y2="15"></line>
+          <line x1="9" y1="9" x2="9" y2="21"></line>
+        </svg>
       </div>
+      <p class="empty-title">Belum ada tugas terdaftar</p>
+      <p class="empty-desc">Tambahkan tugas pertama Anda menggunakan form di sebelah kiri.</p>
+    </div>
 
-      <!-- Pagination Navigation Buttons -->
-      <div v-if="totalPages > 1" class="pagination-controls">
-        <!-- Tombol Prev -->
-        <button
-          class="page-nav-btn"
-          :disabled="currentPage === 1"
-          @click="goToPage(currentPage - 1)"
-          title="Halaman Sebelumnya"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-        </button>
+    <!-- Daftar Tugas dengan Paginasi -->
+    <div v-else class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-no">#</th>
+            <th class="col-task">Tugas & Tag</th>
+            <th class="col-priority">Prioritas</th>
+            <th class="col-due">Tenggat</th>
+            <th class="col-status">Status</th>
+            <th class="col-img">Lampiran</th>
+            <th class="col-action">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <TaskItem
+            v-for="(task, index) in paginatedTasks"
+            :key="task.id"
+            :task="task"
+            :index="(currentPage - 1) * pageSize + index + 1"
+            @toggle="emit('toggle', $event)"
+            @delete="emit('delete', $event)"
+            @edit="emit('edit', $event)"
+            @update-status="emit('update-status', $event)"
+            @open-lightbox="emit('open-lightbox', $event)"
+          />
+        </tbody>
+      </table>
 
-        <!-- Nomor Halaman -->
-        <div class="page-numbers">
+      <!-- Table Footer with Pagination Controls -->
+      <div class="table-footer">
+        <div class="footer-left">
+          <span class="footer-info">
+            Menampilkan <strong class="text-highlight">{{ itemRangeStart }}–{{ itemRangeEnd }}</strong> dari <strong class="text-highlight">{{ tasks.length }}</strong> tugas
+          </span>
+          <div class="footer-stats">
+            <span class="stat-pill done">{{ completedCount }} Selesai</span>
+            <span class="stat-pill active">{{ activeCount }} Aktif</span>
+          </div>
+        </div>
+
+        <!-- Pagination Navigation Buttons -->
+        <div v-if="totalPages > 1" class="pagination-controls">
+          <!-- Tombol Prev -->
           <button
-            v-for="page in totalPages"
-            :key="page"
-            class="page-num-btn"
-            :class="{ active: page === currentPage }"
-            @click="goToPage(page)"
+            class="page-nav-btn"
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+            title="Halaman Sebelumnya"
           >
-            {{ page }}
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+
+          <!-- Nomor Halaman -->
+          <div class="page-numbers">
+            <button
+              v-for="page in totalPages"
+              :key="page"
+              class="page-num-btn"
+              :class="{ active: page === currentPage }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <!-- Tombol Next -->
+          <button
+            class="page-nav-btn"
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+            title="Halaman Berikutnya"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
           </button>
         </div>
-
-        <!-- Tombol Next -->
-        <button
-          class="page-nav-btn"
-          :disabled="currentPage === totalPages"
-          @click="goToPage(currentPage + 1)"
-          title="Halaman Berikutnya"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </button>
       </div>
     </div>
   </div>
@@ -165,6 +167,12 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 </script>
 
 <style scoped>
+.task-list-root {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Status / Loading */
 .table-status {
   display: flex;

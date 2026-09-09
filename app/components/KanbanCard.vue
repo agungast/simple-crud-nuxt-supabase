@@ -42,12 +42,12 @@
 
     <!-- Card Title -->
     <h4 class="card-title" :class="{ 'completed-title': task.is_completed || task.status === 'DONE' }">
-      {{ task.title }}
+      {{ task.title || task.task || 'Tanpa Judul' }}
     </h4>
 
     <!-- Meta: Tags & Estimated Hours -->
-    <div v-if="(task.tags && task.tags.length > 0) || task.estimated_hours" class="card-meta-row">
-      <span v-for="tag in task.tags" :key="tag" class="meta-tag-badge">#{{ tag }}</span>
+    <div v-if="(normalizedTags.length > 0) || task.estimated_hours" class="card-meta-row">
+      <span v-for="tag in normalizedTags" :key="tag" class="meta-tag-badge">#{{ tag }}</span>
       <span v-if="task.estimated_hours" class="meta-hours-badge">
         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"></circle>
@@ -118,7 +118,7 @@
             </div>
             <h3 class="modal-title">Hapus Tugas</h3>
             <p class="modal-message">Apakah ingin menghapus tugas ini secara permanen?</p>
-            <p class="modal-task-name">"{{ task.title }}"</p>
+            <p class="modal-task-name">"{{ task.title || task.task || 'Tugas' }}"</p>
             <div class="modal-actions">
               <button type="button" class="btn-cancel" @click="showConfirm = false">Batal</button>
               <button type="button" class="btn-confirm" @click="confirmDelete">Hapus</button>
@@ -307,10 +307,25 @@ const priorityMeta = computed(() => {
   }
 })
 
-const formatDueDate = (iso: string | null) => {
+const normalizedTags = computed<string[]>(() => {
+  const raw = props.task?.tags
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw.map(t => String(t).trim()).filter(Boolean)
+  if (typeof raw === 'string') {
+    return (raw as string)
+      .replace(/^\{|\}$/g, '')
+      .split(',')
+      .map(s => s.replace(/["']/g, '').trim())
+      .filter(Boolean)
+  }
+  return []
+})
+
+const formatDueDate = (iso: string | null | undefined) => {
   if (!iso) return '-'
   try {
     const d = new Date(iso)
+    if (isNaN(d.getTime())) return '-'
     return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
   } catch {
     return '-'
@@ -318,18 +333,23 @@ const formatDueDate = (iso: string | null) => {
 }
 
 const isOverdue = computed(() => {
-  if (!props.task.due_date || props.task.status === 'DONE' || props.task.is_completed) return false
-  const due = new Date(props.task.due_date)
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  return due < now
+  if (!props.task?.due_date || props.task.status === 'DONE' || props.task.is_completed) return false
+  try {
+    const due = new Date(props.task.due_date)
+    if (isNaN(due.getTime())) return false
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    return due < now
+  } catch {
+    return false
+  }
 })
 
 // Attachments
-const attachments = computed(() => props.task.task_attachments || [])
+const attachments = computed(() => props.task?.task_attachments || [])
 const totalAttachments = computed(() => {
   if (attachments.value.length > 0) return attachments.value.length
-  return props.task.cover_image_url || props.task.image_url ? 1 : 0
+  return props.task?.cover_image_url || props.task?.image_url ? 1 : 0
 })
 
 const hasPrivateAttachments = computed(() => {
@@ -356,12 +376,12 @@ const editError = ref<string>('')
 const editInputRef = ref<HTMLInputElement | null>(null)
 
 const openEdit = async (): Promise<void> => {
-  editText.value = props.task.title
+  editText.value = props.task.title || props.task.task || ''
   editPriority.value = props.task.priority || 'MEDIUM'
   editStatus.value = props.task.status || (props.task.is_completed ? 'DONE' : 'TODO')
   editDueDate.value = props.task.due_date ? (props.task.due_date.split('T')[0] ?? '') : ''
   editEstimatedHours.value = props.task.estimated_hours || null
-  editTags.value = props.task.tags ? [...props.task.tags] : []
+  editTags.value = [...normalizedTags.value]
   editTagInput.value = ''
   editError.value = ''
   showEdit.value = true
