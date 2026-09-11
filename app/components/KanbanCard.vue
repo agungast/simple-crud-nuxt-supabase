@@ -9,12 +9,39 @@
   >
     <!-- Card Header: Priority Badge & Action Buttons -->
     <div class="card-top">
-      <span class="priority-badge" :class="priorityMeta.class">
-        <span class="priority-dot"></span>
-        {{ priorityMeta.label }}
-      </span>
+      <div class="card-badges">
+        <!-- Space Badge -->
+        <span
+          v-if="cardProject"
+          class="card-project-badge"
+          :style="{ color: cardProject.color, borderColor: `${cardProject.color}40`, background: `${cardProject.color}15` }"
+          @click.stop="taskStore.setActiveProject(cardProject.id)"
+          :title="`Ruang Kerja: ${cardProject.name} — Klik untuk filter`"
+        >
+          <span class="proj-badge-icon">{{ cardProject.icon }}</span>
+          <span class="proj-badge-name">{{ cardProject.name }}</span>
+        </span>
+
+        <span class="priority-badge" :class="priorityMeta.class">
+          <span class="priority-dot"></span>
+          {{ priorityMeta.label }}
+        </span>
+      </div>
 
       <div class="card-actions">
+        <button
+          type="button"
+          class="card-action-btn detail-btn"
+          @click.stop="taskStore.openDetailModal(task)"
+          title="Buka Catatan & Detail Tugas"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+        </button>
         <button
           type="button"
           class="card-action-btn edit-btn"
@@ -41,12 +68,39 @@
     </div>
 
     <!-- Card Title -->
-    <h4 class="card-title" :class="{ 'completed-title': task.is_completed || task.status === 'DONE' }">
+    <h4
+      class="card-title"
+      :class="{ 'completed-title': task.is_completed || task.status === 'DONE' }"
+      @click.stop="taskStore.openDetailModal(task)"
+      title="Klik untuk membuka detail dan catatan markdown"
+    >
       {{ task.title || task.task || 'Tanpa Judul' }}
     </h4>
 
-    <!-- Meta: Tags & Estimated Hours -->
-    <div v-if="(normalizedTags.length > 0) || task.estimated_hours" class="card-meta-row">
+    <!-- Meta: Subtasks, Doc, Tags & Estimated Hours -->
+    <div v-if="(task.subtasks && task.subtasks.length > 0) || task.description_markdown || (normalizedTags.length > 0) || task.estimated_hours" class="card-meta-row">
+      <!-- Subtasks Badge -->
+      <span
+        v-if="task.subtasks && task.subtasks.length > 0"
+        class="card-subtask-badge"
+        @click.stop="taskStore.openDetailModal(task)"
+        :title="`${completedSubtasksCount} dari ${task.subtasks.length} sub-tugas selesai`"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        {{ completedSubtasksCount }}/{{ task.subtasks.length }}
+      </span>
+
+      <!-- Markdown Doc Badge -->
+      <span
+        v-if="task.description_markdown"
+        class="card-doc-badge"
+        @click.stop="taskStore.openDetailModal(task)"
+        title="Memiliki catatan markdown"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        Doc
+      </span>
+
       <span v-for="tag in normalizedTags" :key="tag" class="meta-tag-badge">#{{ tag }}</span>
       <span v-if="task.estimated_hours" class="meta-hours-badge">
         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -221,6 +275,17 @@
                 </div>
               </div>
 
+              <!-- Ruang Kerja (Space) -->
+              <div class="edit-field">
+                <label class="edit-label">Ruang Kerja (Space)</label>
+                <select v-model="editProjectId" class="edit-select">
+                  <option :value="null">Tanpa Ruang Kerja</option>
+                  <option v-for="p in taskStore.projects" :key="p.id" :value="p.id">
+                    {{ p.icon }} {{ p.name }}
+                  </option>
+                </select>
+              </div>
+
               <!-- Tag list in edit modal -->
               <div v-if="editTags.length > 0" class="edit-tags-list">
                 <span v-for="(t, idx) in editTags" :key="t" class="edit-tag-badge">
@@ -307,6 +372,18 @@ const priorityMeta = computed(() => {
   }
 })
 
+const cardProject = computed(() => {
+  if (props.task.project) return props.task.project
+  if (props.task.project_id) {
+    return taskStore.projects.find(p => String(p.id) === String(props.task.project_id)) || null
+  }
+  return null
+})
+
+const completedSubtasksCount = computed<number>(() => {
+  return (props.task.subtasks || []).filter(s => s.is_completed).length
+})
+
 const normalizedTags = computed<string[]>(() => {
   const raw = props.task?.tags
   if (!raw) return []
@@ -370,6 +447,7 @@ const editPriority = ref<TaskPriority>('MEDIUM')
 const editStatus = ref<TaskStatus>('TODO')
 const editDueDate = ref<string>('')
 const editEstimatedHours = ref<number | null>(null)
+const editProjectId = ref<string | null>(null)
 const editTags = ref<string[]>([])
 const editTagInput = ref<string>('')
 const editError = ref<string>('')
@@ -381,6 +459,7 @@ const openEdit = async (): Promise<void> => {
   editStatus.value = props.task.status || (props.task.is_completed ? 'DONE' : 'TODO')
   editDueDate.value = props.task.due_date ? (props.task.due_date.split('T')[0] ?? '') : ''
   editEstimatedHours.value = props.task.estimated_hours || null
+  editProjectId.value = props.task.project_id || null
   editTags.value = [...normalizedTags.value]
   editTagInput.value = ''
   editError.value = ''
@@ -418,7 +497,8 @@ const confirmEdit = (): void => {
       status: editStatus.value,
       due_date: editDueDate.value ? new Date(editDueDate.value).toISOString() : null,
       estimated_hours: editEstimatedHours.value ? Number(editEstimatedHours.value) : 0,
-      tags: [...editTags.value]
+      tags: [...editTags.value],
+      project_id: editProjectId.value
     }
   })
   showEdit.value = false
@@ -466,6 +546,43 @@ const confirmEdit = (): void => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+}
+
+.card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.card-project-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 11.5px;
+  font-weight: 550;
+  cursor: pointer;
+  max-width: 130px;
+  transition: opacity 0.15s ease;
+}
+
+.card-project-badge:hover {
+  opacity: 0.85;
+}
+
+.proj-badge-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.proj-badge-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .priority-badge {
@@ -543,6 +660,12 @@ const confirmEdit = (): void => {
   color: #f87171;
 }
 
+.card-action-btn.detail-btn:hover {
+  background: rgba(79, 70, 229, 0.14);
+  border-color: rgba(79, 70, 229, 0.35);
+  color: #a5b4fc;
+}
+
 /* Card Title */
 .card-title {
   margin: 0;
@@ -551,6 +674,12 @@ const confirmEdit = (): void => {
   color: #f8fafc;
   line-height: 1.45;
   word-break: break-word;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.card-title:hover:not(.completed-title) {
+  color: #818cf8;
 }
 
 .completed-title {
@@ -558,12 +687,54 @@ const confirmEdit = (): void => {
   color: #94a3b8;
 }
 
-/* Meta: Tags & Hours */
+/* Meta: Tags, Subtasks, Hours */
 .card-meta-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+.card-subtask-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.card-subtask-badge:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.card-doc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.card-doc-badge:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
 }
 
 .meta-tag-badge {

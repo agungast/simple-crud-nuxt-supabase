@@ -3,13 +3,54 @@
     <!-- No -->
     <td class="td-no">{{ index }}</td>
 
-    <!-- Tugas & Meta (Tags, Estimasi) -->
+    <!-- Tugas & Meta (Tags, Estimasi, Subtasks) -->
     <td class="td-task">
       <div class="task-info-group">
-        <span class="task-text" :class="{ 'completed-text': task.is_completed }">
-          {{ task.title }}
-        </span>
-        <div v-if="(task.tags && task.tags.length > 0) || task.estimated_hours" class="task-meta-row">
+        <button
+          type="button"
+          class="task-text-btn"
+          @click="taskStore.openDetailModal(task)"
+          :title="`Buka detail & catatan untuk '${task.title || task.task}'`"
+        >
+          <span class="task-text" :class="{ 'completed-text': task.is_completed }">
+            {{ task.title || task.task }}
+          </span>
+        </button>
+        <div class="task-meta-row">
+          <!-- Space Badge -->
+          <span
+            v-if="taskProject"
+            class="meta-project-badge"
+            :style="{ color: taskProject.color, borderColor: `${taskProject.color}40`, background: `${taskProject.color}15` }"
+            @click.stop="taskStore.setActiveProject(taskProject.id)"
+            :title="`Ruang Kerja: ${taskProject.name} — Klik untuk filter`"
+          >
+            <span class="proj-badge-icon">{{ taskProject.icon }}</span>
+            <span>{{ taskProject.name }}</span>
+          </span>
+
+          <!-- Subtasks Badge -->
+          <span
+            v-if="task.subtasks && task.subtasks.length > 0"
+            class="meta-subtask-badge"
+            @click.stop="taskStore.openDetailModal(task)"
+            :title="`${completedSubtasksCount} dari ${task.subtasks.length} sub-tugas selesai`"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            {{ completedSubtasksCount }}/{{ task.subtasks.length }}
+          </span>
+
+          <!-- Markdown Doc Badge -->
+          <span
+            v-if="task.description_markdown"
+            class="meta-doc-badge"
+            @click.stop="taskStore.openDetailModal(task)"
+            title="Memiliki catatan markdown"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            Doc
+          </span>
+
           <span v-for="tag in task.tags" :key="tag" class="meta-tag-badge">#{{ tag }}</span>
           <span v-if="task.estimated_hours" class="meta-hours-badge">
             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -105,6 +146,14 @@
     <!-- Aksi -->
     <td class="td-action">
       <div class="action-group">
+        <button @click="taskStore.openDetailModal(task)" class="detail-btn" title="Buka Detail & Catatan Markdown">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+        </button>
         <button @click="openEdit" class="edit-btn" title="Edit Nama Tugas">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -241,6 +290,17 @@
               </div>
             </div>
 
+            <!-- Ruang Kerja (Space) -->
+            <div class="edit-field">
+              <label class="edit-label">Ruang Kerja (Space)</label>
+              <select v-model="editProjectId" class="edit-select">
+                <option :value="null">Tanpa Ruang Kerja</option>
+                <option v-for="p in taskStore.projects" :key="p.id" :value="p.id">
+                  {{ p.icon }} {{ p.name }}
+                </option>
+              </select>
+            </div>
+
             <!-- Tag list in edit modal -->
             <div v-if="editTags.length > 0" class="edit-tags-list">
               <span v-for="(t, idx) in editTags" :key="t" class="edit-tag-badge">
@@ -311,6 +371,18 @@ const priorityMeta = computed(() => {
     default:
       return { label: 'Sedang', class: 'p-medium' }
   }
+})
+
+const taskProject = computed(() => {
+  if (props.task.project) return props.task.project
+  if (props.task.project_id) {
+    return taskStore.projects.find(p => String(p.id) === String(props.task.project_id)) || null
+  }
+  return null
+})
+
+const completedSubtasksCount = computed<number>(() => {
+  return (props.task.subtasks || []).filter(s => s.is_completed).length
 })
 
 const statusMeta = computed(() => {
@@ -417,6 +489,7 @@ const editPriority = ref<TaskPriority>('MEDIUM')
 const editStatus = ref<TaskStatus>('TODO')
 const editDueDate = ref<string>('')
 const editEstimatedHours = ref<number | null>(null)
+const editProjectId = ref<string | null>(null)
 const editTags = ref<string[]>([])
 const editTagInput = ref<string>('')
 const editError = ref<string>('')
@@ -428,6 +501,7 @@ const openEdit = async (): Promise<void> => {
   editStatus.value = props.task.status || (props.task.is_completed ? 'DONE' : 'TODO')
   editDueDate.value = props.task.due_date ? (props.task.due_date.split('T')[0] ?? '') : ''
   editEstimatedHours.value = props.task.estimated_hours || null
+  editProjectId.value = props.task.project_id || null
   editTags.value = props.task.tags ? [...props.task.tags] : []
   editTagInput.value = ''
   editError.value = ''
@@ -465,7 +539,8 @@ const confirmEdit = (): void => {
       status: editStatus.value,
       due_date: editDueDate.value ? new Date(editDueDate.value).toISOString() : null,
       estimated_hours: editEstimatedHours.value ? Number(editEstimatedHours.value) : 0,
-      tags: [...editTags.value]
+      tags: [...editTags.value],
+      project_id: editProjectId.value
     }
   })
   showEdit.value = false
@@ -516,6 +591,21 @@ td {
   gap: 4px;
 }
 
+.task-text-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.task-text-btn:hover .task-text:not(.completed-text) {
+  color: #818cf8;
+}
+
 .task-text {
   display: block;
   font-size: 13.5px;
@@ -524,6 +614,7 @@ td {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.15s ease;
 }
 
 .completed-text {
@@ -531,11 +622,76 @@ td {
   color: #94a3b8;
 }
 
+.meta-subtask-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.meta-subtask-badge:hover {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.meta-doc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.meta-doc-badge:hover {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
 .task-meta-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.meta-project-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 550;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.meta-project-badge:hover {
+  opacity: 0.85;
+}
+
+.proj-badge-icon {
+  font-size: 11px;
+  line-height: 1;
 }
 
 .meta-tag-badge {
@@ -829,6 +985,26 @@ td {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.detail-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.detail-btn:hover {
+  background: #172136;
+  border-color: #2d3b55;
+  color: #818cf8;
 }
 
 .edit-btn {

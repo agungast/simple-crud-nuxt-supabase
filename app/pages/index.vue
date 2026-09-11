@@ -79,6 +79,23 @@
               <line x1="9" y1="9" x2="9" y2="21"></line>
             </svg>
             <h2 class="card-title">Daftar Tugas</h2>
+            <span
+              v-if="activeProject"
+              class="active-space-pill"
+              :style="{ color: activeProject.color, borderColor: `${activeProject.color}40`, background: `${activeProject.color}15` }"
+              :title="`Menampilkan tugas di ruang kerja: ${activeProject.name}`"
+            >
+              <span class="active-space-icon">{{ activeProject.icon }}</span>
+              <span class="active-space-name">{{ activeProject.name }}</span>
+              <button
+                type="button"
+                class="clear-space-btn"
+                @click.stop="taskStore.setActiveProject(null)"
+                title="Hapus filter ruang kerja"
+              >
+                &times;
+              </button>
+            </span>
           </div>
           <div class="card-header-actions">
             <!-- Segmented View Switcher: Tabel vs Kanban -->
@@ -113,6 +130,22 @@
                   <line x1="15" y1="3" x2="15" y2="21"></line>
                 </svg>
                 <span>Kanban</span>
+              </button>
+              <button
+                type="button"
+                class="view-switch-btn"
+                :class="{ active: viewMode === 'calendar' }"
+                @click="taskStore.setViewMode('calendar')"
+                id="view-switch-calendar"
+                title="Tampilan Kalender & Jadwal"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <span>Kalender</span>
               </button>
             </div>
 
@@ -181,13 +214,20 @@
               @open-lightbox="taskStore.openLightbox"
             />
           </div>
-          <div v-else key="kanban" class="view-panel">
+          <div v-else-if="viewMode === 'kanban'" key="kanban" class="view-panel">
             <KanbanBoard
               :tasks="filteredTasks"
               :pending="pending"
               @edit="handleEditTask"
               @delete="handleDeleteTask"
               @update-status="handleUpdateStatus"
+            />
+          </div>
+          <div v-else-if="viewMode === 'calendar'" key="calendar" class="view-panel">
+            <CalendarView
+              :tasks="filteredTasks"
+              :pending="pending"
+              @update-due-date="handleUpdateDueDate"
             />
           </div>
         </div>
@@ -254,7 +294,8 @@ const {
   activeCount,
   progressPercent,
   viewMode,
-  filteredTasks
+  filteredTasks,
+  activeProject
 } = storeToRefs(taskStore)
 
 // ─── Template Refs ──────────────────────────────────────────────────────────
@@ -283,6 +324,10 @@ const handleEditTask = ({ task, payload }: { task: Task; payload: string | TaskE
 
 const handleDeleteTask = (task: Task): void => {
   taskStore.deleteTask(task)
+}
+
+const handleUpdateDueDate = ({ task, dueDate }: { task: Task; dueDate: string | null }): void => {
+  taskStore.updateTaskDueDate(task, dueDate)
 }
 
 const handleOutsideClick = (e: MouseEvent): void => {
@@ -501,6 +546,46 @@ onUnmounted(() => {
   letter-spacing: -0.01em;
 }
 
+.active-space-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid;
+  font-size: 11.5px;
+  font-weight: 550;
+  margin-left: 4px;
+}
+
+.active-space-icon {
+  font-size: 11.5px;
+  line-height: 1;
+}
+
+.active-space-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clear-space-btn {
+  background: none;
+  border: none;
+  color: currentColor;
+  opacity: 0.7;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.clear-space-btn:hover {
+  opacity: 1;
+}
+
 .card-header-actions {
   display: flex;
   align-items: center;
@@ -554,6 +639,9 @@ onUnmounted(() => {
 /* ─── VIEW PANEL ANIMATION ────────────────────────────────────────────────── */
 .view-panel {
   width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   animation: viewPanelFade 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

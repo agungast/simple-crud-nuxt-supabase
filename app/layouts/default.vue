@@ -58,6 +58,83 @@
           <span class="nav-item-text">Aktif</span>
           <span class="nav-badge warning">{{ activeCount }}</span>
         </div>
+
+        <!-- ─── SPACES SECTION (SoloFlow Phase 4: Notion-style Spaces) ─── -->
+        <div class="sidebar-spaces-section">
+          <div class="spaces-header">
+            <p class="nav-label">SPACES</p>
+            <button
+              type="button"
+              class="add-space-btn"
+              @click="taskStore.openProjectModal()"
+              title="Tambah Ruang Kerja Baru"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Semua Ruang Kerja (All Tasks) -->
+          <div
+            class="nav-item space-item"
+            :class="{ active: !taskStore.activeProjectId }"
+            @click="taskStore.setActiveProject(null)"
+            title="Semua Ruang Kerja"
+          >
+            <span class="space-icon-wrap">🌐</span>
+            <span class="nav-item-text">Semua Ruang Kerja</span>
+            <span class="nav-badge">{{ tasks.length }}</span>
+          </div>
+
+          <!-- Daftar Spaces Pengguna -->
+          <div
+            v-for="proj in taskStore.projects"
+            :key="proj.id"
+            class="nav-item space-item custom-space"
+            :class="{ active: taskStore.activeProjectId === proj.id }"
+            @click="taskStore.setActiveProject(proj.id)"
+            :title="proj.name"
+          >
+            <span class="space-icon-wrap">{{ proj.icon }}</span>
+            <span class="nav-item-text">{{ proj.name }}</span>
+            <span
+              class="space-dot"
+              :style="{ background: proj.color }"
+              :title="proj.name"
+            ></span>
+            <span class="nav-badge space-count">
+              {{ taskStore.getProjectTaskCount(proj.id) }}
+            </span>
+
+            <!-- Actions on Hover (Edit & Delete) -->
+            <div class="space-hover-actions" @click.stop>
+              <button
+                type="button"
+                class="space-action-btn"
+                @click.stop="taskStore.openProjectModal(proj)"
+                title="Edit Ruang Kerja"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="space-action-btn delete"
+                @click.stop="confirmDeleteProject(proj)"
+                title="Hapus Ruang Kerja"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
       </nav>
 
       <!-- Sidebar Footer (User info & Logout) -->
@@ -112,6 +189,12 @@
       @close="taskStore.closeLightbox"
     />
 
+    <!-- Modal Detail Tugas & Workspace Markdown (SoloFlow Phase 3) -->
+    <TaskDetailModal />
+
+    <!-- Modal Project Spaces (SoloFlow Phase 4) -->
+    <ProjectModal />
+
     <!-- Modal Manajemen Lampiran File -->
     <AttachmentModal />
 
@@ -150,6 +233,12 @@ const handleLogout = () => {
   authStore.openLogoutModal()
 }
 
+const confirmDeleteProject = async (proj: any) => {
+  if (confirm(`Apakah Anda yakin ingin menghapus ruang kerja "${proj.name}"? Tugas di dalamnya akan tetap tersimpan.`)) {
+    await taskStore.deleteProject(proj.id)
+  }
+}
+
 // Keyboard shortcut: Ctrl + B or Cmd + B to toggle sidebar
 const handleKeyDown = (e: KeyboardEvent) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
@@ -165,6 +254,7 @@ onMounted(() => {
       sidebarCollapsed.value = saved === 'true'
     }
   }
+  taskStore.fetchProjects()
   window.addEventListener('keydown', handleKeyDown)
 })
 
@@ -347,6 +437,114 @@ onUnmounted(() => {
 
 .sidebar.sidebar-collapsed:not(:hover) .nav-item-text,
 .sidebar.sidebar-collapsed:not(:hover) .nav-badge {
+  display: none;
+}
+
+/* Spaces Section */
+.sidebar-spaces-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #172136;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.spaces-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 6px;
+}
+
+.sidebar.sidebar-collapsed:not(:hover) .spaces-header {
+  display: none;
+}
+
+.add-space-btn {
+  background: transparent;
+  border: 1px solid #1f2a3f;
+  border-radius: 4px;
+  color: #94a3b8;
+  padding: 3px 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.add-space-btn:hover {
+  color: #f1f5f9;
+  background: #172136;
+  border-color: #2d3b55;
+}
+
+.space-item {
+  cursor: pointer;
+}
+
+.space-icon-wrap {
+  font-size: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.space-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+.space-count {
+  margin-left: auto;
+}
+
+.space-hover-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.custom-space:hover .space-count {
+  display: none;
+}
+
+.custom-space:hover .space-hover-actions {
+  display: flex;
+}
+
+.space-action-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 2px 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.space-action-btn:hover {
+  color: #f1f5f9;
+  background: #243048;
+}
+
+.space-action-btn.delete:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.sidebar.sidebar-collapsed:not(:hover) .space-dot,
+.sidebar.sidebar-collapsed:not(:hover) .space-count,
+.sidebar.sidebar-collapsed:not(:hover) .space-hover-actions {
   display: none;
 }
 

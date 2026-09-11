@@ -45,8 +45,35 @@
         </div>
       </div>
 
-      <!-- Grid 2 Kolom: Status Alur & Batas Waktu -->
+      <!-- Grid 2 Kolom: Ruang Kerja & Status Alur -->
       <div class="form-row-2col">
+        <!-- Ruang Kerja (Project Space) -->
+        <div class="form-field">
+          <div class="label-row-inline">
+            <label class="form-label">Ruang Kerja <span class="optional">(Space)</span></label>
+            <button
+              type="button"
+              class="create-space-inline-btn"
+              @click="taskStore.openProjectModal()"
+              title="Buat Ruang Kerja Baru"
+            >
+              + Space Baru
+            </button>
+          </div>
+          <div class="select-wrapper">
+            <select id="task-project-select" v-model="selectedProjectId" class="custom-select" :disabled="uploading">
+              <option :value="null">-- Tanpa Ruang Kerja (Umum) --</option>
+              <option v-for="proj in taskStore.projects" :key="proj.id" :value="proj.id">
+                {{ proj.icon }} {{ proj.name }}
+              </option>
+            </select>
+            <svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Status Alur -->
         <div class="form-field">
           <label class="form-label">Status Alur</label>
           <div class="select-wrapper">
@@ -60,7 +87,10 @@
             </svg>
           </div>
         </div>
+      </div>
 
+      <!-- Grid 2 Kolom: Batas Waktu & Estimasi Jam -->
+      <div class="form-row-2col">
         <div class="form-field">
           <label class="form-label">Batas Waktu <span class="optional">(Deadline)</span></label>
           <div class="input-wrapper">
@@ -73,10 +103,7 @@
             />
           </div>
         </div>
-      </div>
 
-      <!-- Grid 2 Kolom: Estimasi Waktu & Tags -->
-      <div class="form-row-2col">
         <div class="form-field">
           <label class="form-label">Estimasi <span class="optional">(Jam)</span></label>
           <div class="input-wrapper">
@@ -96,25 +123,26 @@
             />
           </div>
         </div>
+      </div>
 
-        <div class="form-field">
-          <label class="form-label">Tag / Label <span class="optional">(Tekan Enter)</span></label>
-          <div class="input-wrapper">
-            <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-              <line x1="7" y1="7" x2="7.01" y2="7"></line>
-            </svg>
-            <input
-              id="task-tag-input"
-              v-model="tagInput"
-              type="text"
-              placeholder="frontend, bug..."
-              class="text-input"
-              :disabled="uploading"
-              @keydown.enter.prevent="addTag"
-              @keydown.,.prevent="addTag"
-            />
-          </div>
+      <!-- Tag / Label Input -->
+      <div class="form-field">
+        <label class="form-label">Tag / Label <span class="optional">(Tekan Enter)</span></label>
+        <div class="input-wrapper">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+            <line x1="7" y1="7" x2="7.01" y2="7"></line>
+          </svg>
+          <input
+            id="task-tag-input"
+            v-model="tagInput"
+            type="text"
+            placeholder="frontend, bug..."
+            class="text-input"
+            :disabled="uploading"
+            @keydown.enter.prevent="addTag"
+            @keydown.,.prevent="addTag"
+          />
         </div>
       </div>
 
@@ -240,7 +268,10 @@
 </template>
 
 <script setup lang="ts">
+import { useTaskStore } from '~/stores/taskStore'
 import type { TaskFormSubmitPayload, SelectedUploadFile, TaskPriority, TaskStatus } from '~/types/task'
+
+const taskStore = useTaskStore()
 
 // Props
 const props = defineProps<{
@@ -256,12 +287,20 @@ const emit = defineEmits<{
 const localTaskText = ref<string>('')
 const selectedPriority = ref<TaskPriority>('MEDIUM')
 const selectedStatus = ref<TaskStatus>('TODO')
+const selectedProjectId = ref<string | null>(taskStore.activeProjectId || null)
 const dueDate = ref<string>('')
 const estimatedHours = ref<number | null>(null)
 const tags = ref<string[]>([])
 const tagInput = ref<string>('')
 const selectedFiles = ref<SelectedUploadFile[]>([])
 const isDragging = ref<boolean>(false)
+
+watch(
+  () => taskStore.activeProjectId,
+  (newProjId) => {
+    selectedProjectId.value = newProjId || null
+  }
+)
 
 const priorityOptions: { value: TaskPriority; label: string; dotClass: string }[] = [
   { value: 'LOW', label: 'Rendah', dotClass: 'dot-low' },
@@ -353,6 +392,7 @@ const resetForm = () => {
   localTaskText.value = ''
   selectedPriority.value = 'MEDIUM'
   selectedStatus.value = 'TODO'
+  selectedProjectId.value = taskStore.activeProjectId || null
   dueDate.value = ''
   estimatedHours.value = null
   tags.value = []
@@ -372,6 +412,7 @@ const handleSubmit = () => {
     taskText: localTaskText.value.trim(),
     priority: selectedPriority.value,
     status: selectedStatus.value,
+    projectId: selectedProjectId.value || null,
     dueDate: dueDate.value ? new Date(dueDate.value).toISOString() : null,
     estimatedHours: estimatedHours.value ? Number(estimatedHours.value) : 0,
     tags: [...tags.value],
@@ -427,6 +468,29 @@ defineExpose({
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.label-row-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.create-space-inline-btn {
+  background: transparent;
+  border: none;
+  color: #38bdf8;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: color 0.15s ease;
+}
+
+.create-space-inline-btn:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
 }
 
 .files-count-badge {

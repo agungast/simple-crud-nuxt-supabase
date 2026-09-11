@@ -22,32 +22,34 @@
 
     <!-- Daftar Tugas dengan Paginasi -->
     <div v-else class="table-wrapper">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th class="col-no">#</th>
-            <th class="col-task">Tugas & Tag</th>
-            <th class="col-priority">Prioritas</th>
-            <th class="col-due">Tenggat</th>
-            <th class="col-status">Status</th>
-            <th class="col-img">Lampiran</th>
-            <th class="col-action">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          <TaskItem
-            v-for="(task, index) in paginatedTasks"
-            :key="task.id"
-            :task="task"
-            :index="(currentPage - 1) * pageSize + index + 1"
-            @toggle="emit('toggle', $event)"
-            @delete="emit('delete', $event)"
-            @edit="emit('edit', $event)"
-            @update-status="emit('update-status', $event)"
-            @open-lightbox="emit('open-lightbox', $event)"
-          />
-        </tbody>
-      </table>
+      <div class="table-scroll-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-no">#</th>
+              <th class="col-task">Tugas & Tag</th>
+              <th class="col-priority">Prioritas</th>
+              <th class="col-due">Tenggat</th>
+              <th class="col-status">Status</th>
+              <th class="col-img">Lampiran</th>
+              <th class="col-action">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <TaskItem
+              v-for="(task, index) in paginatedTasks"
+              :key="task.id"
+              :task="task"
+              :index="(currentPage - 1) * pageSize + index + 1"
+              @toggle="emit('toggle', $event)"
+              @delete="emit('delete', $event)"
+              @edit="emit('edit', $event)"
+              @update-status="emit('update-status', $event)"
+              @open-lightbox="emit('open-lightbox', $event)"
+            />
+          </tbody>
+        </table>
+      </div>
 
       <!-- Table Footer with Pagination Controls -->
       <div class="table-footer">
@@ -61,44 +63,64 @@
           </div>
         </div>
 
-        <!-- Pagination Navigation Buttons -->
-        <div v-if="totalPages > 1" class="pagination-controls">
-          <!-- Tombol Prev -->
-          <button
-            class="page-nav-btn"
-            :disabled="currentPage === 1"
-            @click="goToPage(currentPage - 1)"
-            title="Halaman Sebelumnya"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-          </button>
-
-          <!-- Nomor Halaman -->
-          <div class="page-numbers">
-            <button
-              v-for="page in totalPages"
-              :key="page"
-              class="page-num-btn"
-              :class="{ active: page === currentPage }"
-              @click="goToPage(page)"
-            >
-              {{ page }}
-            </button>
+        <div class="footer-right">
+          <!-- Page Size Selector -->
+          <div class="page-size-selector">
+            <span class="page-size-label">Baris:</span>
+            <div class="page-size-group">
+              <button
+                v-for="size in pageSizeOptions"
+                :key="size"
+                type="button"
+                class="size-pill-btn"
+                :class="{ active: pageSize === size }"
+                @click="setPageSize(size)"
+                :title="`Tampilkan ${size} tugas per halaman`"
+              >
+                {{ size }}
+              </button>
+            </div>
           </div>
 
-          <!-- Tombol Next -->
-          <button
-            class="page-nav-btn"
-            :disabled="currentPage === totalPages"
-            @click="goToPage(currentPage + 1)"
-            title="Halaman Berikutnya"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </button>
+          <!-- Pagination Navigation Buttons -->
+          <div v-if="totalPages > 1" class="pagination-controls">
+            <!-- Tombol Prev -->
+            <button
+              class="page-nav-btn"
+              :disabled="currentPage === 1"
+              @click="goToPage(currentPage - 1)"
+              title="Halaman Sebelumnya"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+
+            <!-- Nomor Halaman -->
+            <div class="page-numbers">
+              <button
+                v-for="page in totalPages"
+                :key="page"
+                class="page-num-btn"
+                :class="{ active: page === currentPage }"
+                @click="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+            </div>
+
+            <!-- Tombol Next -->
+            <button
+              class="page-nav-btn"
+              :disabled="currentPage === totalPages"
+              @click="goToPage(currentPage + 1)"
+              title="Halaman Berikutnya"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -124,31 +146,37 @@ const emit = defineEmits<{
 }>()
 
 // ─── PAGINATION LOGIC ─────────────────────────────────────────────────────────
-const pageSize = 5
+const pageSizeOptions = [8, 10, 15, 20]
+const pageSize = ref<number>(10)
 const currentPage = ref<number>(1)
 
 const totalPages = computed<number>(() => {
-  return Math.ceil(props.tasks.length / pageSize) || 1
+  return Math.ceil(props.tasks.length / pageSize.value) || 1
 })
 
 const paginatedTasks = computed<Task[]>(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return props.tasks.slice(start, start + pageSize)
+  const start = (currentPage.value - 1) * pageSize.value
+  return props.tasks.slice(start, start + pageSize.value)
 })
 
 const itemRangeStart = computed<number>(() => {
   if (props.tasks.length === 0) return 0
-  return (currentPage.value - 1) * pageSize + 1
+  return (currentPage.value - 1) * pageSize.value + 1
 })
 
 const itemRangeEnd = computed<number>(() => {
-  return Math.min(currentPage.value * pageSize, props.tasks.length)
+  return Math.min(currentPage.value * pageSize.value, props.tasks.length)
 })
 
 const goToPage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
   }
+}
+
+const setPageSize = (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1
 }
 
 // Watcher untuk mereset atau menyesuaikan halaman jika data berkurang
@@ -171,6 +199,7 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   width: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 /* Status / Loading */
@@ -242,13 +271,17 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 
 /* Table */
 .table-wrapper {
-  overflow-x: auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 380px;
   flex: 1;
+  min-height: 480px;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.table-scroll-container {
+  overflow-x: auto;
+  flex: 1;
 }
 
 .data-table {
@@ -337,6 +370,59 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   background: rgba(245, 158, 11, 0.12);
   color: #fbbf24;
   border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+/* Footer Right: Page Size & Pagination */
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-size-label {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.page-size-group {
+  display: flex;
+  align-items: center;
+  background: #111726;
+  border: 1px solid #1f2a3f;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.size-pill-btn {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.size-pill-btn:hover:not(.active) {
+  color: #f1f5f9;
+  background: #172136;
+}
+
+.size-pill-btn.active {
+  background: #2563eb;
+  color: #ffffff;
 }
 
 /* Pagination Controls */

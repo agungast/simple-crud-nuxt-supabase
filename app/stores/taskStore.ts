@@ -4,6 +4,9 @@ import type {
   TaskPayload,
   TaskPriority,
   TaskStatus,
+  Subtask,
+  Project,
+  ProjectPayload,
   TaskAttachment,
   SelectedUploadFile,
   TaskFormSubmitPayload,
@@ -28,6 +31,13 @@ export const useTaskStore = defineStore('task', () => {
   // Sidebar
   const sidebarCollapsed = ref<boolean>(false)
 
+  // Project Spaces (SoloFlow Phase 4: Notion-style Spaces)
+  const projects = ref<Project[]>([])
+  const activeProjectId = ref<string | null>(null)
+  const showProjectModal = ref<boolean>(false)
+  const selectedProjectForEdit = ref<Project | null>(null)
+  const projectsLoading = ref<boolean>(false)
+
   // Lightbox (Mendukung Galeri Multi-Gambar)
   const lightboxItems = ref<LightboxMediaItem[]>([])
   const lightboxIndex = ref<number>(0)
@@ -39,6 +49,11 @@ export const useTaskStore = defineStore('task', () => {
   // Attachment Modal
   const selectedTaskForAttachments = ref<Task | null>(null)
   const showAttachmentModal = ref<boolean>(false)
+
+  // Task Detail Modal (SoloFlow Phase 3: Notion Workspace & Subtasks)
+  const selectedTaskForDetail = ref<Task | null>(null)
+  const showDetailModal = ref<boolean>(false)
+  const detailLoading = ref<boolean>(false)
 
   // Backup
   const latestBackups = ref<BackupFile[]>([])
@@ -57,8 +72,8 @@ export const useTaskStore = defineStore('task', () => {
   // Realtime channel reference (tidak perlu reaktif)
   let realtimeChannel: ReturnType<typeof supabase.channel> | null = null
 
-  // View Mode ('table' | 'kanban')
-  const viewMode = ref<'table' | 'kanban'>('table')
+  // View Mode ('table' | 'kanban' | 'calendar')
+  const viewMode = ref<'table' | 'kanban' | 'calendar'>('table')
 
   // Search Filter Query
   const searchQuery = ref<string>('')
@@ -66,12 +81,12 @@ export const useTaskStore = defineStore('task', () => {
   // Inisialisasi preferensi view mode dari localStorage di sisi client
   if (import.meta.client) {
     const savedView = localStorage.getItem('soloflow_view_mode')
-    if (savedView === 'table' || savedView === 'kanban') {
+    if (savedView === 'table' || savedView === 'kanban' || savedView === 'calendar') {
       viewMode.value = savedView
     }
   }
 
-  function setViewMode(mode: 'table' | 'kanban'): void {
+  function setViewMode(mode: 'table' | 'kanban' | 'calendar'): void {
     viewMode.value = mode
     if (import.meta.client) {
       localStorage.setItem('soloflow_view_mode', mode)
@@ -93,8 +108,19 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   // ─── Getters (Computed) ───────────────────────────────────────────────────────
+  const activeProject = computed<Project | null>(() => {
+    if (!activeProjectId.value) return null
+    return projects.value.find(p => String(p.id) === String(activeProjectId.value)) || null
+  })
+
   const filteredTasks = computed<Task[]>(() => {
-    const list = Array.isArray(tasks.value) ? tasks.value : []
+    let list = Array.isArray(tasks.value) ? tasks.value : []
+
+    // Filter berdasarkan Project Space aktif jika dipilih
+    if (activeProjectId.value) {
+      list = list.filter((t: Task) => String(t.project_id) === String(activeProjectId.value))
+    }
+
     const q = searchQuery.value.trim().toLowerCase()
     if (!q) return list
     return list.filter((t: Task) => {
@@ -105,7 +131,9 @@ export const useTaskStore = defineStore('task', () => {
       const matchesStatus = (t.status || '').toLowerCase().includes(q)
       const tagsArray = parseTags(t.tags)
       const matchesTags = tagsArray.some(tag => tag.toLowerCase().includes(q))
-      return matchesName || matchesPriority || matchesStatus || matchesTags
+      const projectName = t.project?.name?.toLowerCase() || ''
+      const matchesProject = projectName.includes(q)
+      return matchesName || matchesPriority || matchesStatus || matchesTags || matchesProject
     })
   })
 
@@ -163,14 +191,25 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  // ─── READ (Initial Fetch with Attachments) ────────────────────────────────────
+  // ─── READ (Initial Fetch with Attachments & Subtasks) ─────────────────────────
   async function fetchTasks(): Promise<void> {
     pending.value = true
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('todos')
-        .select('*, task_attachments(*)')
+        .select('*, task_attachments(*), subtasks(*)')
         .order('created_at', { ascending: false })
+
+      // Resilient fallback jika tabel subtasks belum dimigrasi di remote Supabase
+      if (error && (error.message?.includes('subtasks') || error.code === 'PGRST204' || error.message?.includes('relation'))) {
+        console.warn('Tabel subtasks belum dibuat di Supabase remote. Mengambil data tugas tanpa relasi subtasks.')
+        const fallback = await supabase
+          .from('todos')
+          .select('*, task_attachments(*)')
+          .order('created_at', { ascending: false })
+        data = fallback.data
+        error = fallback.error
+      }
 
       if (error) {
         console.error('Error fetching tasks:', error)
@@ -183,6 +222,9 @@ export const useTaskStore = defineStore('task', () => {
             seen.add(a.id)
             return true
           })
+          const rawSubtasks: Subtask[] = (t.subtasks ?? []).sort(
+            (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          )
           const taskName = t.title || t.task || ''
           return {
             ...t,
@@ -193,9 +235,13 @@ export const useTaskStore = defineStore('task', () => {
             tags: parseTags(t.tags),
             estimated_hours: t.estimated_hours || 0,
             due_date: t.due_date || null,
+            description_markdown: t.description_markdown || '',
             cover_image_url: t.cover_image_url || t.image_url || null,
             image_url: t.image_url || t.cover_image_url || null,
-            task_attachments: uniqueAtts
+            project_id: t.project_id || null,
+            project: projects.value.find(p => String(p.id) === String(t.project_id)) || null,
+            task_attachments: uniqueAtts,
+            subtasks: rawSubtasks
           }
         }) as Task[]
       }
@@ -346,6 +392,7 @@ export const useTaskStore = defineStore('task', () => {
       const files = isObject ? payloadOrText.files : filesOrUndefined
       const priority: TaskPriority = isObject ? (payloadOrText.priority ?? 'MEDIUM') : 'MEDIUM'
       const status: TaskStatus = isObject ? (payloadOrText.status ?? 'TODO') : 'TODO'
+      const projectId: string | null = isObject ? (payloadOrText.projectId ?? null) : null
       const dueDate: string | null = isObject ? (payloadOrText.dueDate ?? null) : null
       const estimatedHours: number = isObject ? (payloadOrText.estimatedHours ?? 0) : 0
       const tags: string[] = isObject ? (payloadOrText.tags ?? []) : []
@@ -380,6 +427,7 @@ export const useTaskStore = defineStore('task', () => {
         title: taskText,
         priority,
         status,
+        project_id: projectId || null,
         due_date: dueDate,
         estimated_hours: estimatedHours,
         tags,
@@ -427,12 +475,15 @@ export const useTaskStore = defineStore('task', () => {
       }
 
       const taskTitle = taskData.title || taskData.task || taskText
+      const finalProjectId = taskData.project_id || projectId || null
       const newTask = {
         ...taskData,
         title: taskTitle,
         task: taskTitle,
         priority: taskData.priority || priority,
         status: taskData.status || status,
+        project_id: finalProjectId,
+        project: projects.value.find(p => String(p.id) === String(finalProjectId)) || null,
         due_date: taskData.due_date || dueDate,
         estimated_hours: taskData.estimated_hours || estimatedHours,
         tags: taskData.tags || tags,
@@ -682,6 +733,10 @@ export const useTaskStore = defineStore('task', () => {
       if (editData.due_date !== undefined) tasks.value[targetIdx].due_date = editData.due_date
       if (editData.estimated_hours !== undefined) tasks.value[targetIdx].estimated_hours = editData.estimated_hours
       if (editData.tags !== undefined) tasks.value[targetIdx].tags = editData.tags
+      if (editData.project_id !== undefined) {
+        tasks.value[targetIdx].project_id = editData.project_id
+        tasks.value[targetIdx].project = editData.project_id ? (projects.value.find(p => String(p.id) === String(editData.project_id)) || null) : null
+      }
     }
 
     const updatePayload: any = {
@@ -689,6 +744,7 @@ export const useTaskStore = defineStore('task', () => {
       title: newTitle,
       ...(editData.priority ? { priority: editData.priority } : {}),
       ...(editData.status ? { status: editData.status, is_completed: newCompleted } : {}),
+      ...(editData.project_id !== undefined ? { project_id: editData.project_id } : {}),
       ...(editData.due_date !== undefined ? { due_date: editData.due_date } : {}),
       ...(editData.estimated_hours !== undefined ? { estimated_hours: editData.estimated_hours } : {}),
       ...(editData.tags !== undefined ? { tags: editData.tags } : {})
@@ -754,6 +810,44 @@ export const useTaskStore = defineStore('task', () => {
       } catch (err) {
         console.error('Error parsing image URL:', err)
       }
+    }
+  }
+
+  async function updateTaskDueDate(task: Task, dueDate: string | null): Promise<boolean> {
+    const targetIdx = tasks.value.findIndex(t => t.id === task.id)
+    const oldDueDate = task.due_date
+
+    if (targetIdx !== -1 && tasks.value[targetIdx]) {
+      tasks.value[targetIdx].due_date = dueDate
+    }
+    if (selectedTaskForDetail.value && selectedTaskForDetail.value.id === task.id) {
+      selectedTaskForDetail.value.due_date = dueDate
+    }
+
+    try {
+      const { error } = await (supabase
+        .from('todos') as any)
+        .update({ due_date: dueDate })
+        .eq('id', task.id)
+
+      if (error) {
+        console.warn('Gagal mengubah batas waktu tugas di database:', error.message)
+        if (targetIdx !== -1 && tasks.value[targetIdx]) {
+          tasks.value[targetIdx].due_date = oldDueDate
+        }
+        if (selectedTaskForDetail.value && selectedTaskForDetail.value.id === task.id) {
+          selectedTaskForDetail.value.due_date = oldDueDate
+        }
+        return false
+      }
+      addLog('UPDATE', `Jadwal: ${task.title}`)
+      return true
+    } catch (err) {
+      console.warn('Error updating due date:', err)
+      if (targetIdx !== -1 && tasks.value[targetIdx]) {
+        tasks.value[targetIdx].due_date = oldDueDate
+      }
+      return false
     }
   }
 
@@ -890,6 +984,378 @@ export const useTaskStore = defineStore('task', () => {
     showAttachmentModal.value = false
   }
 
+  // ─── TASK DETAIL & WORKSPACE (SOLOFLOW PHASE 3) ───────────────────────────────
+  async function openDetailModal(task: Task): Promise<void> {
+    selectedTaskForDetail.value = task
+    showDetailModal.value = true
+    await fetchSubtasksForTask(task.id)
+  }
+
+  function closeDetailModal(): void {
+    selectedTaskForDetail.value = null
+    showDetailModal.value = false
+  }
+
+  async function fetchSubtasksForTask(taskId: string | number): Promise<void> {
+    try {
+      const { data, error } = await (supabase
+        .from('subtasks') as any)
+        .select('*')
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true })
+
+      if (!error && data) {
+        const targetIdx = tasks.value.findIndex(t => String(t.id) === String(taskId))
+        if (targetIdx !== -1 && tasks.value[targetIdx]) {
+          tasks.value[targetIdx].subtasks = data as Subtask[]
+        }
+        if (selectedTaskForDetail.value && String(selectedTaskForDetail.value.id) === String(taskId)) {
+          selectedTaskForDetail.value.subtasks = data as Subtask[]
+        }
+      }
+    } catch (err) {
+      console.warn('Subtasks fetch error:', err)
+    }
+  }
+
+  async function saveTaskDescription(taskId: string | number, markdown: string): Promise<boolean> {
+    const targetIdx = tasks.value.findIndex(t => String(t.id) === String(taskId))
+    if (targetIdx !== -1 && tasks.value[targetIdx]) {
+      tasks.value[targetIdx].description_markdown = markdown
+    }
+    if (selectedTaskForDetail.value && String(selectedTaskForDetail.value.id) === String(taskId)) {
+      selectedTaskForDetail.value.description_markdown = markdown
+    }
+
+    try {
+      const { error } = await (supabase
+        .from('todos') as any)
+        .update({ description_markdown: markdown })
+        .eq('id', taskId)
+
+      if (error) {
+        console.warn('Simpan deskripsi markdown gagal:', error.message)
+        return false
+      }
+      addLog('UPDATE', `Deskripsi ${tasks.value[targetIdx]?.title || 'Tugas'}`)
+      return true
+    } catch (err: any) {
+      console.error('Error save description:', err)
+      return false
+    }
+  }
+
+  async function addSubtask(taskId: string | number, title: string): Promise<Subtask | null> {
+    const trimmed = title.trim()
+    if (!trimmed) return null
+
+    const tempId = 'temp-' + Date.now()
+    const tempSubtask: Subtask = {
+      id: tempId,
+      task_id: String(taskId),
+      title: trimmed,
+      is_completed: false,
+      created_at: new Date().toISOString()
+    }
+
+    // Optimistic local add
+    const targetIdx = tasks.value.findIndex(t => String(t.id) === String(taskId))
+    if (targetIdx !== -1 && tasks.value[targetIdx]) {
+      if (!tasks.value[targetIdx].subtasks) tasks.value[targetIdx].subtasks = []
+      tasks.value[targetIdx].subtasks!.push(tempSubtask)
+    }
+    if (selectedTaskForDetail.value && String(selectedTaskForDetail.value.id) === String(taskId)) {
+      if (!selectedTaskForDetail.value.subtasks) selectedTaskForDetail.value.subtasks = []
+      selectedTaskForDetail.value.subtasks.push(tempSubtask)
+    }
+
+    try {
+      const { data, error } = await (supabase
+        .from('subtasks') as any)
+        .insert([{
+          task_id: taskId,
+          title: trimmed,
+          is_completed: false
+        }])
+        .select()
+        .single()
+
+      if (error) {
+        console.warn('Simpan subtask ke database gagal (migrasi 06 mungkin belum dijalankan):', error.message)
+        return tempSubtask
+      }
+
+      if (data) {
+        // Ganti id temporary dengan id database asli
+        if (targetIdx !== -1 && tasks.value[targetIdx]?.subtasks) {
+          const sIdx = tasks.value[targetIdx].subtasks!.findIndex(s => s.id === tempId)
+          if (sIdx !== -1) tasks.value[targetIdx].subtasks![sIdx] = data as Subtask
+        }
+        if (selectedTaskForDetail.value?.subtasks) {
+          const sIdx = selectedTaskForDetail.value.subtasks.findIndex(s => s.id === tempId)
+          if (sIdx !== -1) selectedTaskForDetail.value.subtasks[sIdx] = data as Subtask
+        }
+        return data as Subtask
+      }
+    } catch (err) {
+      console.warn('Error adding subtask:', err)
+    }
+    return tempSubtask
+  }
+
+  async function toggleSubtask(subtask: Subtask): Promise<void> {
+    const newCompleted = !subtask.is_completed
+    subtask.is_completed = newCompleted
+
+    try {
+      if (!subtask.id.startsWith('temp-')) {
+        await (supabase
+          .from('subtasks') as any)
+          .update({ is_completed: newCompleted })
+          .eq('id', subtask.id)
+      }
+    } catch (err) {
+      console.warn('Error toggling subtask:', err)
+    }
+  }
+
+  async function deleteSubtask(subtaskId: string, taskId: string | number): Promise<void> {
+    const targetIdx = tasks.value.findIndex(t => String(t.id) === String(taskId))
+    if (targetIdx !== -1 && tasks.value[targetIdx]?.subtasks) {
+      tasks.value[targetIdx].subtasks = tasks.value[targetIdx].subtasks!.filter(s => s.id !== subtaskId)
+    }
+    if (selectedTaskForDetail.value?.subtasks && String(selectedTaskForDetail.value.id) === String(taskId)) {
+      selectedTaskForDetail.value.subtasks = selectedTaskForDetail.value.subtasks.filter(s => s.id !== subtaskId)
+    }
+
+    try {
+      if (!subtaskId.startsWith('temp-')) {
+        await (supabase
+          .from('subtasks') as any)
+          .delete()
+          .eq('id', subtaskId)
+      }
+    } catch (err) {
+      console.warn('Error deleting subtask:', err)
+    }
+  }
+
+  // ─── PROJECT SPACES (SoloFlow Phase 4: Notion-style Spaces) ───────────────────
+  async function fetchProjects(): Promise<void> {
+    projectsLoading.value = true
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: true })
+
+      if (error) {
+        if (error.message?.includes('projects') || error.code === 'PGRST204' || error.message?.includes('relation')) {
+          console.warn('Tabel projects belum dibuat di Supabase remote.')
+          projects.value = []
+          return
+        }
+        console.error('Error fetching projects:', error)
+      } else if (data) {
+        projects.value = data as Project[]
+        // Hubungkan relasi project pada tasks yang sudah dimuat
+        tasks.value.forEach(t => {
+          if (t.project_id) {
+            t.project = projects.value.find(p => String(p.id) === String(t.project_id)) || null
+          }
+        })
+      }
+    } catch (err) {
+      console.warn('Unexpected error fetching projects:', err)
+    } finally {
+      projectsLoading.value = false
+    }
+  }
+
+  function openProjectModal(project?: Project): void {
+    selectedProjectForEdit.value = project || null
+    showProjectModal.value = true
+  }
+
+  function closeProjectModal(): void {
+    showProjectModal.value = false
+    selectedProjectForEdit.value = null
+  }
+
+  async function createProject(payload: ProjectPayload): Promise<Project | null> {
+    const trimmedName = payload.name.trim()
+    if (!trimmedName) return null
+
+    const currentUserId = user.value?.id || null
+    const tempId = 'temp-proj-' + Date.now()
+    const tempProject: Project = {
+      id: tempId,
+      name: trimmedName,
+      icon: payload.icon || '📁',
+      color: payload.color || '#38bdf8',
+      created_at: new Date().toISOString()
+    }
+
+    projects.value.push(tempProject)
+
+    try {
+      const insertData: any = {
+        name: trimmedName,
+        icon: payload.icon || '📁',
+        color: payload.color || '#38bdf8'
+      }
+      if (currentUserId) insertData.user_id = currentUserId
+
+      const { data, error } = await (supabase
+        .from('projects') as any)
+        .insert([insertData])
+        .select()
+        .single()
+
+      if (error) {
+        console.warn('Gagal menyimpan project ke Supabase (migrasi 07 mungkin belum dijalankan):', error.message)
+        return tempProject
+      }
+
+      if (data) {
+        const idx = projects.value.findIndex(p => p.id === tempId)
+        if (idx !== -1) {
+          projects.value[idx] = data as Project
+        }
+        addLog('INSERT', `Space: ${data.name}`)
+        return data as Project
+      }
+    } catch (err) {
+      console.warn('Error creating project:', err)
+    }
+    return tempProject
+  }
+
+  async function updateProject(id: string, payload: ProjectPayload): Promise<boolean> {
+    const idx = projects.value.findIndex(p => p.id === id)
+    const existing = projects.value[idx]
+    if (!existing) return false
+
+    const oldProj: Project = { ...existing }
+    const updatedName = payload.name.trim() || oldProj.name
+    const updatedIcon = payload.icon || oldProj.icon
+    const updatedColor = payload.color || oldProj.color
+
+    const updatedProj: Project = {
+      ...oldProj,
+      name: updatedName,
+      icon: updatedIcon,
+      color: updatedColor
+    }
+
+    projects.value[idx] = updatedProj
+
+    // Perbarui referensi project pada task di memory
+    tasks.value.forEach(t => {
+      if (String(t.project_id) === String(id)) {
+        t.project = { ...updatedProj }
+      }
+    })
+
+    try {
+      const { error } = await (supabase
+        .from('projects') as any)
+        .update({
+          name: updatedName,
+          icon: updatedIcon,
+          color: updatedColor
+        })
+        .eq('id', id)
+
+      if (error) {
+        console.warn('Gagal memperbarui project:', error.message)
+        projects.value[idx] = oldProj
+        return false
+      }
+      addLog('UPDATE', `Space: ${updatedProj.name}`)
+      return true
+    } catch (err) {
+      console.warn('Error updating project:', err)
+      projects.value[idx] = oldProj
+      return false
+    }
+  }
+
+  async function deleteProject(id: string): Promise<boolean> {
+    const oldProjects = [...projects.value]
+    projects.value = projects.value.filter(p => p.id !== id)
+
+    // Reset task yang terhubung dengan project ini menjadi unassigned (null)
+    tasks.value.forEach(t => {
+      if (String(t.project_id) === String(id)) {
+        t.project_id = null
+        t.project = null
+      }
+    })
+
+    if (activeProjectId.value === id) {
+      activeProjectId.value = null
+    }
+
+    try {
+      const { error } = await (supabase
+        .from('projects') as any)
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.warn('Gagal menghapus project di database:', error.message)
+        projects.value = oldProjects
+        return false
+      }
+      addLog('DELETE', `Space: ${id.slice(0, 8)}`)
+      return true
+    } catch (err) {
+      console.warn('Error deleting project:', err)
+      projects.value = oldProjects
+      return false
+    }
+  }
+
+  function setActiveProject(projectId: string | null): void {
+    activeProjectId.value = projectId
+  }
+
+  async function updateTaskProject(taskId: string | number, projectId: string | null): Promise<boolean> {
+    const targetIdx = tasks.value.findIndex(t => String(t.id) === String(taskId))
+    const matchedProject = projectId ? (projects.value.find(p => String(p.id) === String(projectId)) || null) : null
+
+    if (targetIdx !== -1 && tasks.value[targetIdx]) {
+      tasks.value[targetIdx].project_id = projectId
+      tasks.value[targetIdx].project = matchedProject
+    }
+    if (selectedTaskForDetail.value && String(selectedTaskForDetail.value.id) === String(taskId)) {
+      selectedTaskForDetail.value.project_id = projectId
+      selectedTaskForDetail.value.project = matchedProject
+    }
+
+    try {
+      const { error } = await (supabase
+        .from('todos') as any)
+        .update({ project_id: projectId })
+        .eq('id', taskId)
+
+      if (error) {
+        console.warn('Update task project gagal (kolom project_id mungkin belum ada):', error.message)
+        return false
+      }
+      addLog('UPDATE', `Pindah Space: ${tasks.value[targetIdx]?.title || 'Tugas'}`)
+      return true
+    } catch (err) {
+      console.warn('Error updating task project:', err)
+      return false
+    }
+  }
+
+  function getProjectTaskCount(projectId: string): number {
+    return tasks.value.filter(t => String(t.project_id) === String(projectId)).length
+  }
+
   // ─── LIGHTBOX GALERI ──────────────────────────────────────────────────────────
   function openLightboxGallery(items: LightboxMediaItem[], startIndex = 0): void {
     if (items.length === 0) return
@@ -1022,6 +1488,9 @@ export const useTaskStore = defineStore('task', () => {
     lightboxImage,
     selectedTaskForAttachments,
     showAttachmentModal,
+    selectedTaskForDetail,
+    showDetailModal,
+    detailLoading,
     latestBackups,
     backupLoading,
     showBackupMenu,
@@ -1029,6 +1498,14 @@ export const useTaskStore = defineStore('task', () => {
     isRealtimeConnected,
     cronStatus,
     cronLoading,
+
+    // Project Spaces (SoloFlow Phase 4: Notion-style Spaces)
+    projects,
+    activeProjectId,
+    activeProject,
+    showProjectModal,
+    selectedProjectForEdit,
+    projectsLoading,
 
     // View & Filter State
     viewMode,
@@ -1051,6 +1528,7 @@ export const useTaskStore = defineStore('task', () => {
     updateTaskStatus,
     editTask,
     deleteTask,
+    updateTaskDueDate,
     getThumbnailUrl,
     getPublicOriginalUrl,
     createSignedDownloadUrl,
@@ -1059,6 +1537,26 @@ export const useTaskStore = defineStore('task', () => {
     // Actions — Attachment Modal
     openAttachmentModal,
     closeAttachmentModal,
+
+    // Actions — Task Detail Modal & Workspace (Phase 3)
+    openDetailModal,
+    closeDetailModal,
+    fetchSubtasksForTask,
+    saveTaskDescription,
+    addSubtask,
+    toggleSubtask,
+    deleteSubtask,
+
+    // Actions — Project Spaces (Phase 4)
+    fetchProjects,
+    openProjectModal,
+    closeProjectModal,
+    createProject,
+    updateProject,
+    deleteProject,
+    setActiveProject,
+    updateTaskProject,
+    getProjectTaskCount,
 
     // Actions — Realtime & Lifecycle
     initRealtime,

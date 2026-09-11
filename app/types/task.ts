@@ -51,6 +51,24 @@ export interface SubtaskPayload {
   is_completed?: boolean
 }
 
+// ─── Project / Space Model (Notion-style Spaces) ─────────────────────────────
+
+export interface Project {
+  id: string
+  user_id?: string
+  name: string
+  icon: string
+  color: string
+  created_at?: string
+  task_count?: number
+}
+
+export interface ProjectPayload {
+  name: string
+  icon?: string
+  color?: string
+}
+
 // ─── Main Task Model (Jira + Notion Hybrid) ───────────────────────────────────
 
 /**
@@ -76,6 +94,7 @@ export interface Task {
   updated_at?: string
   
   // Relational Data (Optional untuk view)
+  project?: Project | null
   subtasks?: Subtask[]
   task_attachments?: TaskAttachment[]
 }
@@ -156,6 +175,7 @@ export interface TaskFormSubmitPayload {
   taskText: string
   priority: TaskPriority
   status: TaskStatus
+  projectId?: string | null
   dueDate?: string | null
   estimatedHours?: number
   tags?: string[]
@@ -169,6 +189,7 @@ export interface TaskEditPayload {
   title: string
   priority?: TaskPriority
   status?: TaskStatus
+  project_id?: string | null
   due_date?: string | null
   estimated_hours?: number
   tags?: string[]
