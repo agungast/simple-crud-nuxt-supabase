@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
+import { useToastStore } from '~/stores/toastStore'
 import type { LoginCredentials, RegisterCredentials } from '~/types/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const supabase = useSupabaseClient()
   const user = useSupabaseUser()
+  const toast = useToastStore()
   const router = useRouter()
 
   // ─── State ────────────────────────────────────────────────────────────────────
@@ -68,18 +70,23 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       if (error) {
-        authError.value = translateAuthError(error.message)
+        const errorMsg = translateAuthError(error.message)
+        authError.value = errorMsg
+        toast.error(errorMsg)
         return false
       }
 
       if (data?.user) {
-        await navigateTo('/', { replace: true })
+        ;(user as any).value = data.user
+        toast.success('Berhasil masuk! Mengalihkan...')
         return true
       }
 
       return false
     } catch (err: any) {
-      authError.value = err.message || 'Terjadi kesalahan saat masuk.'
+      const errorMsg = err.message || 'Terjadi kesalahan saat masuk.'
+      authError.value = errorMsg
+      toast.error(errorMsg)
       return false
     } finally {
       loading.value = false
@@ -105,7 +112,9 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       if (error) {
-        authError.value = translateAuthError(error.message)
+        const errorMsg = translateAuthError(error.message)
+        authError.value = errorMsg
+        toast.error(errorMsg)
         return false
       }
 
@@ -113,10 +122,12 @@ export const useAuthStore = defineStore('auth', () => {
         // Cek apakah Supabase memerlukan konfirmasi email
         if (data.session) {
           // Jika Confirm Email OFF: Akhiri auto-login sesi dan arahkan ke login
+          toast.success('Akun berhasil dibuat! Silakan masuk.')
           await supabase.auth.signOut()
           await navigateTo('/login?registered=success', { replace: true })
         } else {
           // Jika Confirm Email ON: Arahkan ke login dengan instruksi verifikasi
+          toast.info('Pendaftaran berhasil! Silakan periksa email untuk verifikasi.')
           await navigateTo('/login?registered=verify', { replace: true })
         }
         return true
@@ -124,7 +135,9 @@ export const useAuthStore = defineStore('auth', () => {
 
       return false
     } catch (err: any) {
-      authError.value = err.message || 'Terjadi kesalahan saat pendaftaran.'
+      const errorMsg = err.message || 'Terjadi kesalahan saat pendaftaran.'
+      authError.value = errorMsg
+      toast.error(errorMsg)
       return false
     } finally {
       loading.value = false
@@ -141,10 +154,18 @@ export const useAuthStore = defineStore('auth', () => {
       taskStore.resetState()
 
       const { error } = await supabase.auth.signOut()
+      ;(user as any).value = null
       if (error) {
         console.error('Error signing out:', error.message)
       }
-      await navigateTo('/login', { replace: true })
+      toast.info('Anda telah keluar dari akun.')
+      try {
+        await navigateTo('/login', { replace: true })
+      } catch {
+        if (import.meta.client) {
+          window.location.href = '/login'
+        }
+      }
     } catch (err) {
       console.error('Sign out error:', err)
       await navigateTo('/login', { replace: true })

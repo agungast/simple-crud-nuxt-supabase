@@ -1,7 +1,14 @@
 <template>
   <div class="admin-layout">
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div
+      v-if="!sidebarCollapsed"
+      class="mobile-sidebar-backdrop"
+      @click="closeMobileSidebar"
+    ></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <aside class="sidebar" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'mobile-open': !sidebarCollapsed }">
       <!-- Logo -->
       <div class="sidebar-logo">
         <div class="logo-brand-group">
@@ -80,7 +87,7 @@
           <div
             class="nav-item space-item"
             :class="{ active: !taskStore.activeProjectId }"
-            @click="taskStore.setActiveProject(null)"
+            @click="taskStore.setActiveProject(null); handleMobileNavClick()"
             title="Semua Ruang Kerja"
           >
             <span class="space-icon-wrap">🌐</span>
@@ -94,7 +101,7 @@
             :key="proj.id"
             class="nav-item space-item custom-space"
             :class="{ active: taskStore.activeProjectId === proj.id }"
-            @click="taskStore.setActiveProject(proj.id)"
+            @click="taskStore.setActiveProject(proj.id); handleMobileNavClick()"
             :title="proj.name"
           >
             <span class="space-icon-wrap">{{ proj.icon }}</span>
@@ -229,6 +236,16 @@ const toggleSidebar = () => {
   }
 }
 
+const closeMobileSidebar = () => {
+  sidebarCollapsed.value = true
+}
+
+const handleMobileNavClick = () => {
+  if (import.meta.client && window.innerWidth <= 768) {
+    sidebarCollapsed.value = true
+  }
+}
+
 const handleLogout = () => {
   authStore.openLogoutModal()
 }
@@ -249,9 +266,13 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 onMounted(() => {
   if (import.meta.client) {
-    const saved = localStorage.getItem('taskflow_sidebar_collapsed')
-    if (saved !== null) {
-      sidebarCollapsed.value = saved === 'true'
+    if (window.innerWidth <= 768) {
+      sidebarCollapsed.value = true
+    } else {
+      const saved = localStorage.getItem('taskflow_sidebar_collapsed')
+      if (saved !== null) {
+        sidebarCollapsed.value = saved === 'true'
+      }
     }
   }
   taskStore.fetchProjects()
@@ -705,9 +726,51 @@ onUnmounted(() => {
   background: #090d16;
 }
 
-@media (max-width: 640px) {
+/* Mobile Sidebar Backdrop */
+.mobile-sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 7, 13, 0.72);
+    backdrop-filter: blur(4px);
+    z-index: 290;
+    transition: opacity 0.2s ease;
+  }
+
   .sidebar {
-    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh;
+    z-index: 300;
+    width: 260px !important;
+    min-width: 260px !important;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: none;
+    display: flex !important;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+    box-shadow: 16px 0 40px rgba(0, 0, 0, 0.8);
+  }
+
+  .sidebar.sidebar-collapsed:not(.mobile-open) {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.mobile-open .logo-text,
+  .sidebar.mobile-open .nav-label,
+  .sidebar.mobile-open .user-meta,
+  .sidebar.mobile-open .logout-text {
+    display: block !important;
   }
 }
 </style>

@@ -1093,6 +1093,7 @@ const openDayTasks = (cell: MonthCell) => {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -1253,5 +1254,97 @@ const openDayTasks = (cell: MonthCell) => {
 .drawer-leave-to {
   transform: translateX(100%);
   opacity: 0;
+}
+
+/* ─── Responsive Media Queries ────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .cal-control-bar {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  .weekdays-grid {
+    grid-template-columns: repeat(7, minmax(80px, 1fr));
+  }
+  .month-grid {
+    grid-template-columns: repeat(7, minmax(80px, 1fr));
+    grid-auto-rows: minmax(95px, 1fr);
+  }
+  .week-grid {
+    grid-template-columns: repeat(7, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .cal-control-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .nav-cluster {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .current-period-title {
+    font-size: 13.5px;
+  }
+
+  .cal-action-cluster {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .weekdays-grid {
+    grid-template-columns: repeat(7, minmax(44px, 1fr));
+  }
+
+  .weekday-col-header {
+    padding: 6px 2px;
+    font-size: 10.5px;
+  }
+
+  .month-grid {
+    grid-template-columns: repeat(7, minmax(44px, 1fr));
+    grid-auto-rows: minmax(78px, 1fr);
+  }
+
+  .month-day-cell {
+    padding: 4px 3px;
+    gap: 2px;
+  }
+
+  .day-number {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  .cell-task-counter {
+    display: none;
+  }
+
+  .cal-task-chip {
+    padding: 2px 4px;
+    font-size: 10px;
+    gap: 3px;
+  }
+
+  .chip-title {
+    font-size: 10px;
+  }
+
+  .week-grid {
+    grid-template-columns: repeat(7, minmax(110px, 1fr));
+  }
+
+  .unscheduled-tray {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    z-index: 30;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.6);
+  }
 }
 </style>

@@ -7,6 +7,9 @@ export default defineNuxtConfig({
     '@pinia/nuxt'
   ],
   supabase: {
-    redirect: false
+    redirect: false,
+    cookieOptions: {
+      secure: false
+    }
   }
 })

@@ -154,7 +154,18 @@ onMounted(() => {
 
 const handleLogin = async () => {
   if (!form.email || !form.password) return
-  await authStore.signIn(form)
+  const success = await authStore.signIn(form)
+  if (success) {
+    setTimeout(async () => {
+      try {
+        await navigateTo('/', { replace: true })
+      } catch {
+        if (import.meta.client) {
+          window.location.href = '/'
+        }
+      }
+    }, 150)
+  }
 }
 </script>
 

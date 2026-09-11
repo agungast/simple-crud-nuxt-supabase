@@ -490,4 +490,24 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   border-color: #4f46e5;
   color: #ffffff;
 }
+
+@media (max-width: 640px) {
+  .table-footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 10px;
+  }
+
+  .footer-left {
+    justify-content: center;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .pagination-controls {
+    justify-content: center;
+    width: 100%;
+  }
+}
 </style>

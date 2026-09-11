@@ -274,8 +274,10 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { useAuthStore } from '~/stores/authStore'
+import { useToastStore } from '~/stores/toastStore'
 
 const authStore = useAuthStore()
+const toast = useToastStore()
 
 // State Form
 const form = reactive({
@@ -320,7 +322,7 @@ const onAvatarFileChange = (e: Event) => {
   if (target.files && target.files[0]) {
     const file = target.files[0]
     if (file.size > 3 * 1024 * 1024) {
-      alert('Ukuran foto terlalu besar. Maksimal 3MB.')
+      toast.warning('Ukuran foto terlalu besar. Maksimal 3MB.')
       return
     }
     selectedAvatarFile.value = file
@@ -349,9 +351,12 @@ const handleSaveProfile = async () => {
   })
 
   if (success) {
+    toast.success('Profil berhasil diperbarui!')
     setTimeout(() => {
       authStore.closeProfileModal()
     }, 1200)
+  } else if (authStore.authError) {
+    toast.error(authStore.authError)
   }
 }
 </script>

@@ -359,6 +359,32 @@ onUnmounted(() => {
 }
 
 @media (max-width: 640px) {
+  .topbar {
+    padding: 0 12px;
+  }
+
+  .breadcrumb-root,
+  .breadcrumb-sep {
+    display: none;
+  }
+
+  .search-kbd {
+    display: none;
+  }
+
+  .search-input {
+    width: 120px;
+    font-size: 12px;
+    padding-left: 28px;
+    padding-right: 8px;
+  }
+
+  .search-input:focus {
+    width: 160px;
+  }
+}
+
+@media (max-width: 420px) {
   .search-box {
     display: none;
   }

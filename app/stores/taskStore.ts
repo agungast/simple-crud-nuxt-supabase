@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useToastStore } from '~/stores/toastStore'
 import type {
   Task,
   TaskPayload,
@@ -22,6 +23,7 @@ export const useTaskStore = defineStore('task', () => {
   // ─── Supabase Client & User ──────────────────────────────────────────────────
   const supabase = useSupabaseClient()
   const user = useSupabaseUser()
+  const toast = useToastStore()
 
   // ─── State ────────────────────────────────────────────────────────────────────
   const tasks = ref<Task[]>([])
@@ -325,7 +327,7 @@ export const useTaskStore = defineStore('task', () => {
       if (attachment.is_private) {
         downloadUrl = await createSignedDownloadUrl(attachment.file_path, 120)
         if (!downloadUrl) {
-          alert('Gagal membuat tautan unduh privat (Signed URL). Pastikan Anda memiliki izin akses.')
+          toast.error('Gagal membuat tautan unduh privat (Signed URL). Pastikan Anda memiliki izin akses.')
           return
         }
       } else {
@@ -335,7 +337,7 @@ export const useTaskStore = defineStore('task', () => {
       // Buka tab baru / download
       window.open(downloadUrl, '_blank')
     } catch (err: any) {
-      alert('Gagal mengunduh file: ' + err.message)
+      toast.error('Gagal mengunduh file: ' + err.message)
     }
   }
 
@@ -470,7 +472,7 @@ export const useTaskStore = defineStore('task', () => {
 
       if (taskError) {
         console.error('Error inserting task:', taskError)
-        alert('Gagal menambahkan tugas: ' + taskError.message)
+        toast.error('Gagal menambahkan tugas: ' + taskError.message)
         return
       }
 
@@ -522,9 +524,10 @@ export const useTaskStore = defineStore('task', () => {
         tasks.value.unshift(newTask)
         addLog('INSERT', newTask.title)
       }
+      toast.success('Tugas baru berhasil ditambahkan!')
     } catch (err: any) {
       console.error('Unexpected error adding task:', err)
-      alert('Terjadi kesalahan saat menambahkan tugas: ' + (err.message || err))
+      toast.error('Terjadi kesalahan saat menambahkan tugas: ' + (err.message || err))
     } finally {
       uploading.value = false
     }
@@ -564,7 +567,7 @@ export const useTaskStore = defineStore('task', () => {
         .select()
 
       if (attError) {
-        alert('Gagal menambahkan lampiran: ' + attError.message)
+        toast.error('Gagal menambahkan lampiran: ' + attError.message)
         return false
       }
 
@@ -591,10 +594,11 @@ export const useTaskStore = defineStore('task', () => {
       const targetTask = tasks.value.find(t => t.id === taskId)
       const taskName = targetTask?.title || 'Tugas'
       addLog('UPDATE', `${taskName} (+${files.length} lampiran)`)
+      toast.success(`Berhasil menambahkan ${files.length} lampiran!`)
 
       return true
     } catch (err: any) {
-      alert('Gagal mengunggah lampiran: ' + err.message)
+      toast.error('Gagal mengunggah lampiran: ' + err.message)
       return false
     } finally {
       uploading.value = false
@@ -611,7 +615,7 @@ export const useTaskStore = defineStore('task', () => {
         .eq('id', attachment.id)
 
       if (dbError) {
-        alert('Gagal menghapus lampiran dari database: ' + dbError.message)
+        toast.error('Gagal menghapus lampiran dari database: ' + dbError.message)
         return
       }
 
@@ -642,9 +646,10 @@ export const useTaskStore = defineStore('task', () => {
 
       // Tambahkan ke Activity Log
       addLog('UPDATE', `${taskName} (hapus ${attachment.file_name})`)
+      toast.success(`Lampiran '${attachment.file_name}' berhasil dihapus!`)
     } catch (err: any) {
       console.error('Error deleting attachment:', err)
-      alert('Terjadi kesalahan saat menghapus lampiran: ' + err.message)
+      toast.error('Terjadi kesalahan saat menghapus lampiran: ' + err.message)
     }
   }
 
@@ -666,12 +671,18 @@ export const useTaskStore = defineStore('task', () => {
 
     if (error) {
       console.error('Error toggling task:', error)
+      toast.error('Gagal memperbarui status tugas')
       if (targetIdx !== -1 && tasks.value[targetIdx]) {
         tasks.value[targetIdx].is_completed = previousCompleted
         tasks.value[targetIdx].status = task.status
       }
     } else {
       addLog('UPDATE', `${task.title} (${newStatus})`)
+      if (newCompleted) {
+        toast.success(`Tugas '${task.title}' selesai! 🎉`)
+      } else {
+        toast.info(`Status '${task.title}' diubah ke Belum Selesai`)
+      }
     }
   }
 
@@ -701,12 +712,14 @@ export const useTaskStore = defineStore('task', () => {
 
     if (error) {
       console.error('Error updating status:', error)
+      toast.error('Gagal memperbarui status tugas')
       if (targetIdx !== -1 && tasks.value[targetIdx]) {
         tasks.value[targetIdx].status = oldStatus
         tasks.value[targetIdx].is_completed = oldCompleted
       }
     } else {
       addLog('UPDATE', `${task.title} ➔ ${newStatus}`)
+      toast.info(`Status '${task.title}' diubah ke ${newStatus}`)
     }
   }
 
@@ -765,12 +778,13 @@ export const useTaskStore = defineStore('task', () => {
 
     if (error) {
       console.error('Error editing task:', error)
-      alert('Gagal mengubah tugas: ' + error.message)
+      toast.error('Gagal mengubah tugas: ' + error.message)
       if (targetIdx !== -1 && tasks.value[targetIdx]) {
         Object.assign(tasks.value[targetIdx], oldTask)
       }
     } else {
       addLog('UPDATE', newTitle)
+      toast.success('Perubahan tugas berhasil disimpan!')
     }
   }
 
@@ -786,12 +800,13 @@ export const useTaskStore = defineStore('task', () => {
 
     if (error) {
       console.error('Error deleting task:', error)
-      alert('Gagal menghapus tugas: ' + error.message)
+      toast.error('Gagal menghapus tugas: ' + error.message)
       tasks.value = oldTasks
       return
     }
 
     addLog('DELETE', task.title)
+    toast.success('Tugas berhasil dihapus!')
 
     // Hapus semua file lampiran terkait dari Storage jika ada
     if (task.task_attachments && task.task_attachments.length > 0) {
@@ -841,6 +856,7 @@ export const useTaskStore = defineStore('task', () => {
         return false
       }
       addLog('UPDATE', `Jadwal: ${task.title}`)
+      toast.info(dueDate ? 'Batas waktu tugas berhasil diperbarui' : 'Batas waktu tugas dihapus')
       return true
     } catch (err) {
       console.warn('Error updating due date:', err)
@@ -1038,6 +1054,7 @@ export const useTaskStore = defineStore('task', () => {
         return false
       }
       addLog('UPDATE', `Deskripsi ${tasks.value[targetIdx]?.title || 'Tugas'}`)
+      toast.success('Catatan tugas berhasil disimpan!')
       return true
     } catch (err: any) {
       console.error('Error save description:', err)
@@ -1095,11 +1112,13 @@ export const useTaskStore = defineStore('task', () => {
           const sIdx = selectedTaskForDetail.value.subtasks.findIndex(s => s.id === tempId)
           if (sIdx !== -1) selectedTaskForDetail.value.subtasks[sIdx] = data as Subtask
         }
+        toast.success('Subtask berhasil ditambahkan!')
         return data as Subtask
       }
     } catch (err) {
       console.warn('Error adding subtask:', err)
     }
+    toast.success('Subtask berhasil ditambahkan!')
     return tempSubtask
   }
 
@@ -1138,6 +1157,7 @@ export const useTaskStore = defineStore('task', () => {
     } catch (err) {
       console.warn('Error deleting subtask:', err)
     }
+    toast.info('Subtask berhasil dihapus')
   }
 
   // ─── PROJECT SPACES (SoloFlow Phase 4: Notion-style Spaces) ───────────────────
@@ -1223,11 +1243,13 @@ export const useTaskStore = defineStore('task', () => {
           projects.value[idx] = data as Project
         }
         addLog('INSERT', `Space: ${data.name}`)
+        toast.success(`Ruang kerja '${data.name}' berhasil dibuat!`)
         return data as Project
       }
     } catch (err) {
       console.warn('Error creating project:', err)
     }
+    toast.success(`Ruang kerja '${trimmedName}' berhasil dibuat!`)
     return tempProject
   }
 
@@ -1273,6 +1295,7 @@ export const useTaskStore = defineStore('task', () => {
         return false
       }
       addLog('UPDATE', `Space: ${updatedProj.name}`)
+      toast.success(`Ruang kerja '${updatedProj.name}' berhasil diperbarui!`)
       return true
     } catch (err) {
       console.warn('Error updating project:', err)
@@ -1309,6 +1332,7 @@ export const useTaskStore = defineStore('task', () => {
         return false
       }
       addLog('DELETE', `Space: ${id.slice(0, 8)}`)
+      toast.success('Ruang kerja berhasil dihapus!')
       return true
     } catch (err) {
       console.warn('Error deleting project:', err)
@@ -1345,6 +1369,7 @@ export const useTaskStore = defineStore('task', () => {
         return false
       }
       addLog('UPDATE', `Pindah Space: ${tasks.value[targetIdx]?.title || 'Tugas'}`)
+      toast.info(matchedProject ? `Tugas dipindahkan ke '${matchedProject.name}'` : 'Tugas dikeluarkan dari ruang kerja')
       return true
     } catch (err) {
       console.warn('Error updating task project:', err)
@@ -1413,7 +1438,7 @@ export const useTaskStore = defineStore('task', () => {
       .download(fileName)
 
     if (error) {
-      alert('Gagal mengunduh file: ' + error.message)
+      toast.error('Gagal mengunduh file: ' + error.message)
       return
     }
 
@@ -1424,6 +1449,7 @@ export const useTaskStore = defineStore('task', () => {
     a.click()
     URL.revokeObjectURL(url)
     showBackupMenu.value = false
+    toast.success(`File backup '${fileName}' berhasil diunduh!`)
   }
 
   function closeBackupMenu(): void {
