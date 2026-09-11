@@ -12,13 +12,13 @@
       <!-- Logo -->
       <div class="sidebar-logo">
         <div class="logo-brand-group">
-          <div class="logo-icon-wrap" title="TaskFlow">
+          <div class="logo-icon-wrap" title="TaktVibe">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="9 11 12 14 22 4"></polyline>
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
             </svg>
           </div>
-          <span class="logo-text">TaskFlow</span>
+          <span class="logo-text">TaktVibe</span>
         </div>
       </div>
 
@@ -232,7 +232,7 @@ const {
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value
   if (import.meta.client) {
-    localStorage.setItem('taskflow_sidebar_collapsed', sidebarCollapsed.value ? 'true' : 'false')
+    localStorage.setItem('taktvibe_sidebar_collapsed', sidebarCollapsed.value ? 'true' : 'false')
   }
 }
 
@@ -269,7 +269,7 @@ onMounted(() => {
     if (window.innerWidth <= 768) {
       sidebarCollapsed.value = true
     } else {
-      const saved = localStorage.getItem('taskflow_sidebar_collapsed')
+      const saved = localStorage.getItem('taktvibe_sidebar_collapsed') ?? localStorage.getItem('taskflow_sidebar_collapsed')
       if (saved !== null) {
         sidebarCollapsed.value = saved === 'true'
       }
@@ -288,9 +288,10 @@ onUnmounted(() => {
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background: #090d16;
-  color: #f1f5f9;
+  background: var(--bg-base, #090d16);
+  color: var(--text-primary, #f1f5f9);
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ─── SIDEBAR ─────────────────────────────────────────────────────────────── */
@@ -723,7 +724,8 @@ onUnmounted(() => {
   flex-direction: column;
   min-width: 0;
   overflow-x: hidden;
-  background: #090d16;
+  background: var(--bg-base, #090d16);
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Mobile Sidebar Backdrop */

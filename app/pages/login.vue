@@ -2,7 +2,7 @@
   <div class="auth-card">
     <div class="auth-card-header">
       <h2 class="auth-card-title">Selamat Datang Kembali</h2>
-      <p class="auth-card-desc">Masuk ke akun TaskFlow Anda untuk melanjutkan</p>
+      <p class="auth-card-desc">Masuk ke akun TaktVibe Anda untuk melanjutkan</p>
     </div>
 
     <!-- Alert Success setelah Pendaftaran Akun -->

@@ -357,8 +357,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background: #090d16;
+  background: var(--bg-base, #090d16);
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ─── EXECUTIVE BENTO METRIC HEADER ───────────────────────────────────────── */

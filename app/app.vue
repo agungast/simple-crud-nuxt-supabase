@@ -5,6 +5,17 @@
   <ToastContainer />
 </template>
 
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import { useTheme } from '~/composables/useTheme'
+
+const { initTheme } = useTheme()
+
+onMounted(() => {
+  initTheme()
+})
+</script>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
@@ -16,26 +27,8 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #0f172a;
-  color: #f1f5f9;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #0f172a;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  min-height: 100vh;
 }
 </style>
