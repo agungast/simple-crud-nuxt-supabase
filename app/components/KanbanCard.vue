@@ -534,7 +534,7 @@ const confirmEdit = (): void => {
 .kanban-card.is-dragging {
   opacity: 0.45;
   border-style: dashed;
-  border-color: #4f46e5;
+  border-color: #005afb;
 }
 
 .kanban-card.is-completed {
@@ -814,7 +814,7 @@ const confirmEdit = (): void => {
 
 .att-trigger-btn:hover {
   background: #172136;
-  border-color: #4f46e5;
+  border-color: #005afb;
   color: #ffffff;
 }
 
@@ -841,7 +841,7 @@ const confirmEdit = (): void => {
 }
 
 .att-add-quick-btn:hover {
-  border-color: #4f46e5;
+  border-color: #005afb;
   color: #ffffff;
   background: #172136;
 }
@@ -1023,10 +1023,10 @@ const confirmEdit = (): void => {
 }
 
 .edit-p-btn.active {
-  border-color: #4f46e5;
+  border-color: #005afb;
   background: #172136;
   color: #ffffff;
-  box-shadow: 0 0 0 1px #4f46e5;
+  box-shadow: 0 0 0 1px #005afb;
 }
 
 .p-dot {
@@ -1069,7 +1069,7 @@ const confirmEdit = (): void => {
 
 .edit-input:focus,
 .edit-select:focus {
-  border-color: #4f46e5;
+  border-color: #005afb;
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
 }
 
@@ -1117,7 +1117,7 @@ const confirmEdit = (): void => {
   padding: 9px 16px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #4f46e5;
+  background: #005afb;
   color: #ffffff;
   font-size: 13.5px;
   font-weight: 600;
@@ -1127,7 +1127,7 @@ const confirmEdit = (): void => {
 }
 
 .btn-save:hover:not(:disabled) {
-  background: #4338ca;
+  background: #004ecc;
 }
 
 .btn-save:disabled {

@@ -492,7 +492,7 @@ onUnmounted(() => {
 .metric-progress-fill {
   width: 100%;
   height: 100%;
-  background: #4f46e5;
+  background: var(--accent-gradient, linear-gradient(135deg, #005afb, #6120f7));
   border-radius: 999px;
   transform-origin: left;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -704,7 +704,7 @@ onUnmounted(() => {
 
 .backup-btn:hover:not(:disabled) {
   background: #172136;
-  border-color: #4f46e5;
+  border-color: var(--accent-primary, #005afb);
   color: #ffffff;
 }
 

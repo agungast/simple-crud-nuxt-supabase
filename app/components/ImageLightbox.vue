@@ -296,7 +296,7 @@ onUnmounted(() => {
 }
 
 .nav-btn:hover {
-  background: #6366f1;
+  background: #005afb;
   border-color: #818cf8;
   transform: translateY(-50%) scale(1.1);
   box-shadow: 0 0 16px rgba(99, 102, 241, 0.5);

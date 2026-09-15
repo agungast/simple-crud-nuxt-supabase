@@ -295,8 +295,8 @@ onUnmounted(() => {
 }
 
 .search-input:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+  border-color: var(--border-focus, #005afb);
+  box-shadow: 0 0 0 2px rgba(0, 90, 251, 0.2);
 }
 
 .search-input::placeholder {
@@ -347,7 +347,7 @@ onUnmounted(() => {
 }
 
 .topbar-avatar:hover {
-  border-color: #4f46e5;
+  border-color: var(--accent-primary, #005afb);
   transform: scale(1.05);
 }
 

@@ -53,14 +53,9 @@
     <div class="auth-container">
       <!-- App Header / Logo -->
       <div class="auth-header">
-        <NuxtLink to="/" class="auth-brand">
-          <div class="auth-logo-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 11 12 14 22 4"></polyline>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-            </svg>
-          </div>
-          <span class="auth-brand-name">TaktVibe</span>
+        <NuxtLink to="/" class="auth-brand" title="TaktVibe">
+          <img src="/images/logo-full-dark.png" alt="TaktVibe" class="auth-logo-img dark-only" />
+          <img src="/images/logo-full-light.png" alt="TaktVibe" class="auth-logo-img light-only" />
         </NuxtLink>
         <p class="auth-brand-subtitle">Personal Task & Knowledge Management</p>
       </div>
@@ -174,33 +169,23 @@ html.light .theme-toggle-btn:hover {
 .auth-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
   text-decoration: none;
   color: inherit;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .auth-brand:hover {
-  opacity: 0.9;
+  opacity: 0.92;
+  transform: translateY(-1px);
 }
 
-.auth-logo-icon {
-  width: 36px;
-  height: 36px;
-  background: #4f46e5;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.auth-brand-name {
-  font-size: 22px;
-  font-weight: 700;
-  color: #f1f5f9;
-  letter-spacing: -0.3px;
+.auth-logo-img {
+  height: 42px;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
+  display: block;
 }
 
 .auth-brand-subtitle {

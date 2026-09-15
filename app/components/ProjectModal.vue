@@ -313,7 +313,7 @@ async function handleSubmit(): Promise<void> {
 
 .form-input:focus {
   outline: none;
-  border-color: #4f46e5;
+  border-color: #005afb;
 }
 
 /* ─── ICON PICKER ────────────────────────────────────────────────────────── */
@@ -454,8 +454,8 @@ async function handleSubmit(): Promise<void> {
 }
 
 .btn-submit {
-  background: #4f46e5;
-  border: 1px solid #6366f1;
+  background: #005afb;
+  border: 1px solid #005afb;
   color: #ffffff;
   border-radius: 6px;
   padding: 7px 16px;
@@ -470,7 +470,7 @@ async function handleSubmit(): Promise<void> {
 }
 
 .btn-submit:hover:not(:disabled) {
-  background: #4338ca;
+  background: #004ecc;
 }
 
 .btn-submit:disabled {

@@ -691,7 +691,7 @@ const handleClose = () => {
 
 .detail-title-input:focus {
   outline: none;
-  border-color: #4f46e5;
+  border-color: #005afb;
 }
 
 .detail-attrs-grid {
@@ -755,7 +755,7 @@ const handleClose = () => {
 .attr-p-btn.active {
   color: #f1f5f9;
   background: #172136;
-  border-color: #4f46e5;
+  border-color: #005afb;
 }
 
 .p-dot {
@@ -1168,7 +1168,7 @@ const handleClose = () => {
 
 .md-textarea:focus {
   outline: none;
-  border-color: #4f46e5;
+  border-color: #005afb;
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
 }
 
@@ -1277,7 +1277,7 @@ const handleClose = () => {
 }
 
 .save-md-btn {
-  background: #4f46e5;
+  background: #005afb;
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #ffffff;
   font-size: 12.5px;
@@ -1290,7 +1290,7 @@ const handleClose = () => {
 }
 
 .save-md-btn:hover:not(:disabled) {
-  background: #4338ca;
+  background: #004ecc;
 }
 
 .save-md-btn:disabled {

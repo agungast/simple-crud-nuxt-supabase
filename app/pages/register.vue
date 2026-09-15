@@ -187,11 +187,12 @@ const handleRegister = async () => {
 
 <style scoped>
 .auth-card {
-  background: #0f1626;
-  border: 1px solid #1e293b;
+  background: var(--card-bg, #0f1626);
+  border: 1px solid var(--border-color, #1e293b);
   border-radius: 12px;
   padding: 34px 28px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-md, 0 1px 3px rgba(0, 0, 0, 0.4));
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .auth-card-header {
@@ -202,14 +203,14 @@ const handleRegister = async () => {
 .auth-card-title {
   font-size: 22px;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--text-heading, #f8fafc);
   margin: 0;
   letter-spacing: -0.02em;
 }
 
 .auth-card-desc {
   font-size: 13.5px;
-  color: #94a3b8;
+  color: var(--text-secondary, #94a3b8);
   margin-top: 6px;
   margin-bottom: 0;
   line-height: 1.5;
@@ -259,7 +260,7 @@ const handleRegister = async () => {
 .form-label {
   font-size: 13px;
   font-weight: 500;
-  color: #cbd5e1;
+  color: var(--text-soft, #cbd5e1);
 }
 
 .input-wrap {
@@ -271,20 +272,20 @@ const handleRegister = async () => {
 .input-icon {
   position: absolute;
   left: 12px;
-  color: #94a3b8;
+  color: var(--text-secondary, #94a3b8);
   pointer-events: none;
 }
 
 .form-input {
   width: 100%;
-  background: #090d16;
-  border: 1px solid #1e293b;
+  background: var(--input-bg, #090d16);
+  border: 1px solid var(--input-border, #1e293b);
   border-radius: 8px;
   padding: 10px 14px 10px 38px;
-  color: #f8fafc;
+  color: var(--input-color, #f8fafc);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
   font-family: inherit;
 }
 
@@ -293,12 +294,23 @@ const handleRegister = async () => {
 }
 
 .form-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  border-color: var(--border-focus, #005afb);
+  box-shadow: 0 0 0 3px rgba(0, 90, 251, 0.18);
 }
 
 .form-input::placeholder {
-  color: #94a3b8;
+  color: var(--input-placeholder, #94a3b8);
+}
+
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus,
+.form-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--input-bg, #090d16) inset !important;
+  box-shadow: 0 0 0 1000px var(--input-bg, #090d16) inset !important;
+  -webkit-text-fill-color: var(--input-color, #f8fafc) !important;
+  caret-color: var(--input-color, #f8fafc) !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 .toggle-pwd-btn {
@@ -306,7 +318,7 @@ const handleRegister = async () => {
   right: 10px;
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-secondary, #94a3b8);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -317,7 +329,7 @@ const handleRegister = async () => {
 }
 
 .toggle-pwd-btn:hover {
-  color: #f8fafc;
+  color: var(--text-primary, #f8fafc);
 }
 
 /* Submit Button */
@@ -328,7 +340,7 @@ const handleRegister = async () => {
   gap: 8px;
   width: 100%;
   padding: 11px 16px;
-  background: #4f46e5;
+  background: var(--accent-primary, #005afb);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   color: #ffffff;
@@ -342,7 +354,7 @@ const handleRegister = async () => {
 }
 
 .auth-submit-btn:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--accent-primary-hover, #004ecc);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
@@ -352,7 +364,7 @@ const handleRegister = async () => {
 
 .auth-submit-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 0 3px rgba(0, 90, 251, 0.35);
 }
 
 .auth-submit-btn:disabled {

@@ -15,7 +15,7 @@
 
   --border-color: #1f2a3f;
   --border-subtle: #2d3b55;
-  --border-focus: #4f46e5;
+  --border-focus: #005afb;
 
   --text-primary: #f1f5f9;
   --text-heading: #f8fafc;
@@ -47,11 +47,15 @@
   --scrollbar-thumb: #334155;
   --scrollbar-thumb-hover: #475569;
 
-  --accent-primary: #4f46e5;
-  --accent-primary-hover: #4338ca;
+  --accent-primary: #005afb;
+  --accent-primary-hover: #004ecc;
+  --accent-violet: #6120f7;
+  --accent-gradient: linear-gradient(135deg, #005afb 0%, #6120f7 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #004ecc 0%, #521ad8 100%);
   --color-success: #4ade80;
   --color-warning: #fbbf24;
   --color-danger: #f87171;
+  color-scheme: dark;
 }
 
 html.light {
@@ -65,7 +69,7 @@ html.light {
 
   --border-color: #e2e8f0;
   --border-subtle: #cbd5e1;
-  --border-focus: #4f46e5;
+  --border-focus: #005afb;
 
   --text-primary: #0f172a;
   --text-heading: #020617;
@@ -97,11 +101,42 @@ html.light {
   --scrollbar-thumb: #cbd5e1;
   --scrollbar-thumb-hover: #94a3b8;
 
-  --accent-primary: #4f46e5;
-  --accent-primary-hover: #4338ca;
+  --accent-primary: #005afb;
+  --accent-primary-hover: #004ecc;
+  --accent-violet: #6120f7;
+  --accent-gradient: linear-gradient(135deg, #005afb 0%, #6120f7 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #004ecc 0%, #521ad8 100%);
   --color-success: #16a34a;
   --color-warning: #d97706;
   --color-danger: #dc2626;
+  color-scheme: light;
+}
+
+/* ─── THEME RESPONSIVE ASSETS ───────────────────────────────────────────── */
+.dark-only {
+  display: block !important;
+}
+.light-only {
+  display: none !important;
+}
+html.light .dark-only {
+  display: none !important;
+}
+html.light .light-only {
+  display: block !important;
+}
+
+.dark-only-inline {
+  display: inline-block !important;
+}
+.light-only-inline {
+  display: none !important;
+}
+html.light .dark-only-inline {
+  display: none !important;
+}
+html.light .light-only-inline {
+  display: inline-block !important;
 }
 
 /* ─── 2. GLOBAL BASE ADAPTATIONS ────────────────────────────────────────── */
@@ -109,6 +144,55 @@ body {
   background: var(--bg-base);
   color: var(--text-primary);
   transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── BROWSER AUTOFILL STYLES (CHROME/EDGE/SAFARI/FIREFOX) ───────────────── */
+/* Dark Mode Autofill (Default) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #090d16 inset !important;
+  box-shadow: 0 0 0 1000px #090d16 inset !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #f8fafc !important;
+  border-color: #1e293b !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill:focus {
+  border-color: #005afb !important;
+  -webkit-box-shadow: 0 0 0 1000px #090d16 inset, 0 0 0 3px rgba(0, 90, 251, 0.2) !important;
+  box-shadow: 0 0 0 1000px #090d16 inset, 0 0 0 3px rgba(0, 90, 251, 0.2) !important;
+}
+
+/* Light Mode Autofill */
+html.light input:-webkit-autofill,
+html.light input:-webkit-autofill:hover,
+html.light input:-webkit-autofill:focus,
+html.light input:-webkit-autofill:active,
+html.light textarea:-webkit-autofill,
+html.light textarea:-webkit-autofill:hover,
+html.light textarea:-webkit-autofill:focus,
+html.light select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+html.light input:-webkit-autofill:focus,
+html.light textarea:-webkit-autofill:focus {
+  border-color: #005afb !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset, 0 0 0 3px rgba(0, 90, 251, 0.18) !important;
+  box-shadow: 0 0 0 1000px #ffffff inset, 0 0 0 3px rgba(0, 90, 251, 0.18) !important;
 }
 
 /* ─── 3. LIGHT MODE SPECIFIC COMPONENT STYLES ───────────────────────────── */
@@ -250,8 +334,8 @@ html.light .search-input {
 
 html.light .search-input:focus {
   background: #ffffff;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+  border-color: #005afb;
+  box-shadow: 0 0 0 2px rgba(0, 90, 251, 0.15);
 }
 
 html.light .search-icon {
@@ -391,7 +475,7 @@ html.light .backup-btn {
 
 html.light .backup-btn:hover:not(:disabled) {
   background: #f8fafc;
-  border-color: #4f46e5;
+  border-color: #005afb;
   color: #0f172a;
 }
 
@@ -446,8 +530,8 @@ html.light .text-input {
 }
 
 html.light .text-input:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+  border-color: #005afb;
+  box-shadow: 0 0 0 2px rgba(0, 90, 251, 0.15);
 }
 
 html.light .text-input::placeholder {
@@ -461,8 +545,8 @@ html.light .custom-select {
 }
 
 html.light .custom-select:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+  border-color: #005afb;
+  box-shadow: 0 0 0 2px rgba(0, 90, 251, 0.15);
 }
 
 html.light .priority-btn {
@@ -539,7 +623,7 @@ html.light .task-text {
 }
 
 html.light .task-text-btn:hover .task-text:not(.completed-text) {
-  color: #4f46e5;
+  color: #005afb;
 }
 
 html.light .meta-tag-badge {
@@ -646,7 +730,7 @@ html.light .kanban-card .card-title {
 }
 
 html.light .kanban-card .card-title:hover:not(.completed-title) {
-  color: #4f46e5;
+  color: #005afb;
 }
 
 html.light .card-action-btn {
@@ -851,8 +935,8 @@ html.light .tab-btn:hover {
 }
 
 html.light .tab-btn.active {
-  color: #4f46e5;
-  border-bottom-color: #4f46e5;
+  color: #005afb;
+  border-bottom-color: #005afb;
 }
 
 html.light .editor-textarea {
@@ -898,15 +982,73 @@ html.light .auth-brand-subtitle {
 }
 
 html.light .auth-card {
-  background: #ffffff;
-  border-color: #e2e8f0;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08) !important;
 }
 
+html.light .auth-card-title {
+  color: #0f172a !important;
+}
+
+html.light .auth-card-desc {
+  color: #64748b !important;
+}
+
+html.light .form-label {
+  color: #334155 !important;
+}
+
+html.light .form-input,
 html.light .auth-input {
-  background: #ffffff;
-  border-color: #cbd5e1;
-  color: #0f172a;
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light .form-input:focus,
+html.light .auth-input:focus {
+  background: #ffffff !important;
+  border-color: #005afb !important;
+  box-shadow: 0 0 0 3px rgba(0, 90, 251, 0.18) !important;
+}
+
+html.light .form-input::placeholder,
+html.light .auth-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light .input-icon {
+  color: #64748b !important;
+}
+
+html.light .toggle-pwd-btn {
+  color: #64748b !important;
+}
+
+html.light .toggle-pwd-btn:hover {
+  color: #0f172a !important;
+}
+
+html.light .forgot-link {
+  color: #005afb !important;
+}
+
+html.light .forgot-link:hover {
+  color: #004ecc !important;
+}
+
+html.light .auth-card-footer {
+  border-top-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+html.light .auth-link {
+  color: #005afb !important;
+}
+
+html.light .auth-link:hover {
+  color: #004ecc !important;
 }
 
 html.light .auth-footer {

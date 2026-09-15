@@ -23,7 +23,11 @@ export const useTaskStore = defineStore('task', () => {
   // ─── Supabase Client & User ──────────────────────────────────────────────────
   const supabase = useSupabaseClient()
   const user = useSupabaseUser()
-  const toast = useToastStore()
+  const toast = {
+    error: (msg: string, title?: string) => useToastStore().error(msg, title),
+    success: (msg: string, title?: string) => useToastStore().success(msg, title),
+    info: (msg: string, title?: string) => useToastStore().addToast({ message: msg, type: 'info', title })
+  }
 
   // ─── State ────────────────────────────────────────────────────────────────────
   const tasks = ref<Task[]>([])

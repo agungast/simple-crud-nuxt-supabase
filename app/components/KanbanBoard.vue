@@ -177,7 +177,7 @@ const onDrop = (targetStatus: TaskStatus, event: DragEvent) => {
 }
 
 .kanban-column.is-drag-over {
-  border-color: #4f46e5;
+  border-color: #005afb;
   background: #0d1424;
 }
 
@@ -263,7 +263,7 @@ const onDrop = (targetStatus: TaskStatus, event: DragEvent) => {
 }
 
 .kanban-column.is-drag-over .empty-dropzone {
-  border-color: #4f46e5;
+  border-color: #005afb;
   color: #93c5fd;
   background: rgba(79, 70, 229, 0.04);
 }

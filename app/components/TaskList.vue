@@ -217,7 +217,7 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 .pulse-spinner {
   width: 8px;
   height: 8px;
-  background: #4f46e5;
+  background: var(--accent-primary, #005afb);
   border-radius: 50%;
   animation: pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -448,7 +448,7 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 
 .page-nav-btn:hover:not(:disabled) {
   background: #172136;
-  border-color: #4f46e5;
+  border-color: var(--accent-primary, #005afb);
   color: #ffffff;
 }
 
@@ -486,8 +486,8 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
 }
 
 .page-num-btn.active {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: var(--accent-primary, #005afb);
+  border-color: var(--accent-primary, #005afb);
   color: #ffffff;
 }
 

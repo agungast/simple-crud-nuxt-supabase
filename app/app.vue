@@ -2,12 +2,20 @@
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
-  <ToastContainer />
+  <ClientOnly>
+    <ToastContainer />
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { setActivePinia } from 'pinia'
 import { useTheme } from '~/composables/useTheme'
+
+const { $pinia } = useNuxtApp()
+if ($pinia) {
+  setActivePinia($pinia)
+}
 
 const { initTheme } = useTheme()
 

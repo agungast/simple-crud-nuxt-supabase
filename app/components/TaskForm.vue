@@ -531,7 +531,7 @@ defineExpose({
 }
 
 .text-input:focus {
-  border-color: #4f46e5;
+  border-color: #005afb;
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
 }
 
@@ -643,7 +643,7 @@ defineExpose({
 }
 
 .custom-select:focus {
-  border-color: #4f46e5;
+  border-color: #005afb;
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
 }
 
@@ -709,7 +709,7 @@ defineExpose({
 
 .upload-area:hover,
 .upload-area.is-dragging {
-  border-color: #4f46e5;
+  border-color: #005afb;
   background: #0d1424;
 }
 
@@ -888,7 +888,7 @@ defineExpose({
   justify-content: center;
   width: 100%;
   padding: 10px 16px;
-  background: #4f46e5;
+  background: #005afb;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   color: #ffffff;
@@ -901,7 +901,7 @@ defineExpose({
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: #4338ca;
+  background: #004ecc;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 

@@ -11,15 +11,15 @@
     <aside class="sidebar" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'mobile-open': !sidebarCollapsed }">
       <!-- Logo -->
       <div class="sidebar-logo">
-        <div class="logo-brand-group">
-          <div class="logo-icon-wrap" title="TaktVibe">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 11 12 14 22 4"></polyline>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-            </svg>
+        <NuxtLink to="/" class="logo-brand-group" title="TaktVibe">
+          <div class="logo-icon-wrap">
+            <img src="/images/logo-icon.png" alt="TaktVibe Emblem" class="logo-icon-img" />
           </div>
-          <span class="logo-text">TaktVibe</span>
-        </div>
+          <div class="logo-text-wrapper">
+            <img src="/images/logo-horizontal-dark.png" alt="TaktVibe" class="logo-wordmark-img dark-only" />
+            <img src="/images/logo-horizontal-light.png" alt="TaktVibe" class="logo-wordmark-img light-only" />
+          </div>
+        </NuxtLink>
       </div>
 
       <!-- Navigation -->
@@ -45,7 +45,7 @@
             <line x1="3" y1="18" x2="3.01" y2="18"></line>
           </svg>
           <span class="nav-item-text">Semua Tugas</span>
-          <span class="nav-badge">{{ tasks.length }}</span>
+          <span class="nav-badge">{{ tasks?.length || 0 }}</span>
         </div>
 
         <div class="nav-item">
@@ -86,21 +86,21 @@
           <!-- Semua Ruang Kerja (All Tasks) -->
           <div
             class="nav-item space-item"
-            :class="{ active: !taskStore.activeProjectId }"
+            :class="{ active: !activeProjectId }"
             @click="taskStore.setActiveProject(null); handleMobileNavClick()"
             title="Semua Ruang Kerja"
           >
             <span class="space-icon-wrap">🌐</span>
             <span class="nav-item-text">Semua Ruang Kerja</span>
-            <span class="nav-badge">{{ tasks.length }}</span>
+            <span class="nav-badge">{{ tasks?.length || 0 }}</span>
           </div>
 
           <!-- Daftar Spaces Pengguna -->
           <div
-            v-for="proj in taskStore.projects"
+            v-for="proj in (projects || [])"
             :key="proj.id"
             class="nav-item space-item custom-space"
-            :class="{ active: taskStore.activeProjectId === proj.id }"
+            :class="{ active: activeProjectId === proj.id }"
             @click="taskStore.setActiveProject(proj.id); handleMobileNavClick()"
             :title="proj.name"
           >
@@ -148,25 +148,25 @@
       <div class="sidebar-footer">
         <div
           class="user-info clickable"
-          @click="authStore.openProfileModal"
-          :title="sidebarCollapsed ? `${authStore.displayName} (Klik untuk Edit Profil)` : 'Klik untuk Edit Profil'"
+          @click="authStore?.openProfileModal"
+          :title="sidebarCollapsed ? `${authStore?.displayName || 'User'} (Klik untuk Edit Profil)` : 'Klik untuk Edit Profil'"
         >
           <div class="user-avatar">
-            <img v-if="authStore.avatarUrl" :src="authStore.avatarUrl" alt="Avatar" class="sidebar-avatar-img" />
-            <span v-else>{{ authStore.userInitials }}</span>
+            <img v-if="authStore?.avatarUrl" :src="authStore?.avatarUrl" alt="Avatar" class="sidebar-avatar-img" />
+            <span v-else>{{ authStore?.userInitials || 'U' }}</span>
           </div>
           <div class="user-meta">
             <div class="user-name-row">
-              <span class="user-name" :title="authStore.userEmail">{{ authStore.displayName }}</span>
+              <span class="user-name" :title="authStore?.userEmail || ''">{{ authStore?.displayName || 'User' }}</span>
               <svg class="edit-hint-icon" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
             </div>
-            <span class="user-role">{{ authStore.userEmail || 'Supabase User' }}</span>
+            <span class="user-role">{{ authStore?.userEmail || 'Supabase User' }}</span>
           </div>
         </div>
-        <button class="logout-btn" @click="handleLogout" :disabled="authStore.loading" :title="sidebarCollapsed ? 'Keluar (Sign Out)' : undefined">
+        <button class="logout-btn" @click="handleLogout" :disabled="authStore?.loading" :title="sidebarCollapsed ? 'Keluar (Sign Out)' : undefined">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
@@ -186,43 +186,39 @@
       <slot />
     </div>
 
-    <!-- Modal Lightbox Galeri Gambar -->
-    <ImageLightbox
-      :image-url="lightboxImage"
-      :items="taskStore.lightboxItems"
-      :current-index="taskStore.lightboxIndex"
-      @next="taskStore.nextLightboxImage"
-      @prev="taskStore.prevLightboxImage"
-      @close="taskStore.closeLightbox"
-    />
-
-    <!-- Modal Detail Tugas & Workspace Markdown (SoloFlow Phase 3) -->
-    <TaskDetailModal />
-
-    <!-- Modal Project Spaces (SoloFlow Phase 4) -->
-    <ProjectModal />
-
-    <!-- Modal Manajemen Lampiran File -->
-    <AttachmentModal />
-
-    <!-- Modal Edit Profil Pengguna -->
-    <ProfileModal />
-
-    <!-- Modal Konfirmasi Keluar (Logout) -->
-    <LogoutModal />
+    <!-- Modals (ClientOnly) -->
+    <ClientOnly>
+      <ImageLightbox
+        :image-url="lightboxImage"
+        :items="taskStore?.lightboxItems || []"
+        :current-index="taskStore?.lightboxIndex || 0"
+        @next="taskStore?.nextLightboxImage"
+        @prev="taskStore?.prevLightboxImage"
+        @close="taskStore?.closeLightbox"
+      />
+      <TaskDetailModal />
+      <ProjectModal />
+      <AttachmentModal />
+      <ProfileModal />
+      <LogoutModal />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useTaskStore } from '~/stores/taskStore'
 import { useAuthStore } from '~/stores/authStore'
 
-const taskStore = useTaskStore()
-const authStore = useAuthStore()
+const { $pinia } = useNuxtApp()
+const taskStore = useTaskStore($pinia)
+const authStore = useAuthStore($pinia)
 
 const {
   tasks,
+  projects,
+  activeProjectId,
   sidebarCollapsed,
   lightboxImage,
   completedCount,
@@ -341,32 +337,49 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
 }
 
 .logo-icon-wrap {
   width: 32px;
   height: 32px;
-  background: #111726;
-  border: 1px solid #2d3b55;
+  background: transparent;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f1f5f9;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
-.logo-text {
-  font-size: 16px;
-  font-weight: 700;
-  color: #f8fafc;
-  letter-spacing: -0.3px;
-  white-space: nowrap;
+.logo-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
-.sidebar.sidebar-collapsed:not(:hover) .logo-text {
-  display: none;
+.logo-text-wrapper {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.logo-wordmark-img {
+  height: 20px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.sidebar.sidebar-collapsed:not(:hover) .logo-text-wrapper {
+  display: none !important;
+}
+
+.sidebar.sidebar-collapsed:not(:hover) .logo-icon-wrap {
+  margin: 0 auto;
 }
 
 /* Navigation */
@@ -633,7 +646,7 @@ onUnmounted(() => {
 }
 
 .user-info.clickable:hover .user-avatar {
-  border-color: #4f46e5;
+  border-color: var(--accent-primary, #005afb);
 }
 
 .sidebar-avatar-img {
@@ -768,7 +781,7 @@ onUnmounted(() => {
     transform: translateX(-100%);
   }
 
-  .sidebar.mobile-open .logo-text,
+  .sidebar.mobile-open .logo-text-wrapper,
   .sidebar.mobile-open .nav-label,
   .sidebar.mobile-open .user-meta,
   .sidebar.mobile-open .logout-text {

@@ -5,8 +5,11 @@ import type { LoginCredentials, RegisterCredentials } from '~/types/auth'
 export const useAuthStore = defineStore('auth', () => {
   const supabase = useSupabaseClient()
   const user = useSupabaseUser()
-  const toast = useToastStore()
-  const router = useRouter()
+  const toast = {
+    error: (msg: string, title?: string) => useToastStore().error(msg, title),
+    success: (msg: string, title?: string) => useToastStore().success(msg, title),
+    info: (msg: string, title?: string) => useToastStore().addToast({ message: msg, type: 'info', title })
+  }
 
   // ─── State ────────────────────────────────────────────────────────────────────
   const loading = ref<boolean>(false)
@@ -78,7 +81,6 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (data?.user) {
         ;(user as any).value = data.user
-        toast.success('Berhasil masuk! Mengalihkan...')
         return true
       }
 
@@ -158,7 +160,6 @@ export const useAuthStore = defineStore('auth', () => {
       if (error) {
         console.error('Error signing out:', error.message)
       }
-      toast.info('Anda telah keluar dari akun.')
       try {
         await navigateTo('/login', { replace: true })
       } catch {

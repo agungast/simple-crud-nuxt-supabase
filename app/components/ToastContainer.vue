@@ -3,7 +3,7 @@
     <div class="toast-container" aria-live="polite" aria-label="Notifikasi">
       <TransitionGroup name="toast-slide" tag="div" class="toast-stack">
         <div
-          v-for="toast in toastStore.toasts"
+          v-for="toast in (toastStore?.toasts || [])"
           :key="toast.id"
           class="toast-card"
           :class="`toast-${toast.type}`"

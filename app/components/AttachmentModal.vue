@@ -569,8 +569,8 @@ const handleUploadNewFiles = async () => {
 }
 
 .dropzone:hover {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.05);
+  border-color: #005afb;
+  background: rgba(0, 90, 251, 0.05);
 }
 
 .dropzone-inner {
@@ -646,7 +646,7 @@ const handleUploadNewFiles = async () => {
   justify-content: center;
   gap: 8px;
   padding: 9px;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #005afb, #6120f7);
   border: none;
   border-radius: 8px;
   color: #ffffff;

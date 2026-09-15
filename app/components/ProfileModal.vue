@@ -409,7 +409,7 @@ const handleSaveProfile = async () => {
 .header-icon-wrap {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #005afb, #6120f7);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -505,7 +505,7 @@ const handleSaveProfile = async () => {
   height: 64px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #6366f1;
+  border: 2px solid #005afb;
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
 }
 
@@ -513,7 +513,7 @@ const handleSaveProfile = async () => {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #005afb, #6120f7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -531,7 +531,7 @@ const handleSaveProfile = async () => {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #6366f1;
+  background: #005afb;
   border: 2px solid #1e293b;
   display: flex;
   align-items: center;
@@ -565,7 +565,7 @@ const handleSaveProfile = async () => {
   padding: 6px 12px;
   border-radius: 7px;
   background: rgba(99, 102, 241, 0.15);
-  border: 1px solid #6366f1;
+  border: 1px solid #005afb;
   color: #818cf8;
   font-size: 12px;
   font-weight: 600;
@@ -574,7 +574,7 @@ const handleSaveProfile = async () => {
 }
 
 .avatar-upload-btn:hover:not(.disabled) {
-  background: #6366f1;
+  background: #005afb;
   color: #ffffff;
 }
 
@@ -644,7 +644,7 @@ const handleSaveProfile = async () => {
 }
 
 .form-input:focus {
-  border-color: #4f46e5;
+  border-color: #005afb;
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
 }
 
@@ -777,8 +777,8 @@ const handleSaveProfile = async () => {
   align-items: center;
   gap: 8px;
   padding: 9px 18px;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  border: 1px solid #6366f1;
+  background: linear-gradient(135deg, #005afb, #6120f7);
+  border: 1px solid #005afb;
   border-radius: 8px;
   color: #ffffff;
   font-size: 13px;
@@ -789,7 +789,7 @@ const handleSaveProfile = async () => {
 }
 
 .btn-save-profile:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  background: linear-gradient(135deg, #004ecc, #521ad8);
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45);
 }

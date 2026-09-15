@@ -912,7 +912,7 @@ td {
 }
 
 .thumb-wrap:hover {
-  border-color: #4f46e5;
+  border-color: #005afb;
 }
 
 .thumb-wrap:hover .thumb-overlay {
@@ -938,7 +938,7 @@ td {
 
 .attachment-trigger-btn:hover {
   background: #172136;
-  border-color: #4f46e5;
+  border-color: #005afb;
   color: #ffffff;
 }
 
@@ -965,7 +965,7 @@ td {
 }
 
 .add-att-quick-btn:hover {
-  border-color: #4f46e5;
+  border-color: #005afb;
   color: #ffffff;
   background: #172136;
 }
@@ -1256,10 +1256,10 @@ td {
 }
 
 .edit-p-btn.active {
-  border-color: #4f46e5;
+  border-color: #005afb;
   background: #172136;
   color: #ffffff;
-  box-shadow: 0 0 0 1px #4f46e5;
+  box-shadow: 0 0 0 1px #005afb;
 }
 
 .p-dot {
@@ -1313,7 +1313,7 @@ td {
 
 .edit-input:focus,
 .edit-select:focus {
-  border-color: #4f46e5;
+  border-color: #005afb;
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
 }
 
@@ -1365,7 +1365,7 @@ td {
   padding: 9px 16px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #4f46e5;
+  background: #005afb;
   color: #ffffff;
   font-size: 14px;
   font-weight: 600;
@@ -1376,7 +1376,7 @@ td {
 }
 
 .btn-save:hover:not(:disabled) {
-  background: #4338ca;
+  background: #004ecc;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 

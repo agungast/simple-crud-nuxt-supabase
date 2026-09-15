@@ -1,10 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   modules: [
-    '@nuxtjs/supabase',
-    '@pinia/nuxt'
+    '@pinia/nuxt',
+    '@nuxtjs/supabase'
   ],
   css: [
     '~/assets/css/theme.css'
@@ -16,6 +16,11 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'TaktVibe - Personal Task & Knowledge Management System dengan Kanban, Kalender, Spaces, dan Markdown Notes.' }
+      ],
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon.png' },
+        { rel: 'apple-touch-icon', href: '/images/logo-icon.png' }
       ],
       script: [
         {
@@ -29,6 +34,13 @@ export default defineNuxtConfig({
     redirect: false,
     cookieOptions: {
       secure: false
+    }
+  },
+  vite: {
+    server: {
+      fs: {
+        allow: ['..']
+      }
     }
   }
 })
