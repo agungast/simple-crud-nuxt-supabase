@@ -11,7 +11,7 @@
     <aside class="sidebar" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'mobile-open': !sidebarCollapsed }">
       <!-- Logo -->
       <div class="sidebar-logo">
-        <NuxtLink to="/" class="logo-brand-group" title="TaktVibe">
+        <NuxtLink to="/dashboard" class="logo-brand-group" title="TaktVibe">
           <div class="logo-icon-wrap">
             <img src="/images/logo-icon.png" alt="TaktVibe Emblem" class="logo-icon-img" />
           </div>
@@ -25,7 +25,7 @@
       <!-- Navigation -->
       <nav class="sidebar-nav">
         <p class="nav-label">MENU</p>
-        <NuxtLink to="/" class="nav-item active">
+        <NuxtLink to="/dashboard" class="nav-item" active-class="active">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7"></rect>
             <rect x="14" y="3" width="7" height="7"></rect>

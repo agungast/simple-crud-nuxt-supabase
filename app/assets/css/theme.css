@@ -1073,3 +1073,45 @@ html.light .auth-footer {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
+
+/* ─── 5. PAGE TRANSITION ANIMATIONS ───────────────────────────────────────── */
+/* Smooth page navigation - fade + vertical drift, compositor properties only */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translate3d(0, -8px, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active,
+  .slide-up-enter-active,
+  .slide-up-leave-active {
+    transition-duration: 0.01ms;
+    transform: none;
+  }
+}
+
+/* Smooth slide-up transition with fade */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}

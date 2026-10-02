@@ -1,954 +1,1455 @@
 <template>
-  <main class="page-content">
-    <!-- Executive Segmented Metric Header -->
-    <div class="metrics-container">
-      <div class="metric-segment">
-        <div class="metric-top">
-          <span class="metric-label">Total Tugas</span>
-          <span class="metric-dot-indicator total"></span>
-        </div>
-        <div class="metric-main">
-          <span class="metric-value">{{ tasks.length }}</span>
-          <span class="metric-unit">tugas terdaftar</span>
-        </div>
-      </div>
+  <div class="landing-page">
+    <!-- ─── 1. MINIMAL TOP NAV ─────────────────────────────────────────────── -->
+    <header class="site-header" :class="{ 'scrolled': isScrolled }">
+      <div class="header-inner">
+        <!-- Logo -->
+        <NuxtLink to="/" class="brand-link" title="TaktVibe">
+          <img src="/images/logo-icon.png" alt="TaktVibe" class="brand-icon" />
+          <span class="brand-name">TaktVibe</span>
+        </NuxtLink>
 
-      <div class="metric-segment">
-        <div class="metric-top">
-          <span class="metric-label">Tugas Selesai</span>
-          <span class="metric-pill success">{{ completedCount }} selesai</span>
-        </div>
-        <div class="metric-main">
-          <span class="metric-value text-success">{{ completedCount }}</span>
-          <span class="metric-sub">{{ tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0 }}% rasio</span>
-        </div>
-      </div>
+        <!-- Navigation Links -->
+        <nav class="main-nav">
+          <button
+            v-for="link in navLinks"
+            :key="link.target"
+            type="button"
+            class="nav-item"
+            @click="scrollToSection(link.target)"
+          >
+            {{ link.label }}
+          </button>
+        </nav>
 
-      <div class="metric-segment">
-        <div class="metric-top">
-          <span class="metric-label">Tugas Aktif</span>
-          <span class="metric-pill warning">{{ activeCount }} aktif</span>
-        </div>
-        <div class="metric-main">
-          <span class="metric-value text-warning">{{ activeCount }}</span>
-          <span class="metric-sub">perlu diselesaikan</span>
-        </div>
-      </div>
-
-      <div class="metric-segment progress-segment">
-        <div class="metric-top">
-          <span class="metric-label">Tingkat Penyelesaian</span>
-          <span class="metric-pct-badge">{{ progressPercent }}%</span>
-        </div>
-        <div class="metric-progress-wrapper">
-          <div class="metric-progress-track">
-            <div class="metric-progress-fill" :style="{ transform: `scaleX(${progressPercent / 100})` }"></div>
-          </div>
-          <span class="metric-progress-caption">{{ completedCount }} dari {{ tasks.length }} tugas rampung</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Form + Task List -->
-    <div class="content-grid">
-      <!-- Card: Tambah Tugas -->
-      <div class="content-card form-card">
-        <div class="card-header">
-          <div class="card-title-group">
-            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="16"></line>
-              <line x1="8" y1="12" x2="16" y2="12"></line>
+        <!-- Right Action Controls -->
+        <div class="header-actions">
+          <button
+            type="button"
+            class="theme-toggle-btn"
+            @click="toggleTheme"
+            :title="isDark ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'"
+            :aria-label="isDark ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'"
+          >
+            <svg v-if="isDark" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
             </svg>
-            <h2 class="card-title">Tambah Tugas Baru</h2>
-          </div>
-        </div>
-        <div class="card-body">
-          <TaskForm ref="taskFormRef" :uploading="uploading" @submit="handleFormSubmit" />
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <template v-if="authStore.isAuthenticated">
+            <NuxtLink to="/dashboard" class="btn-primary">
+              <span>Ke Dashboard</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </NuxtLink>
+          </template>
+          <template v-else>
+            <NuxtLink to="/login" class="nav-login-link">
+              Masuk
+            </NuxtLink>
+            <NuxtLink to="/register" class="btn-primary">
+              <span>Mulai Gratis</span>
+            </NuxtLink>
+          </template>
         </div>
       </div>
+    </header>
 
-      <!-- Card: Daftar Tugas -->
-      <div class="content-card table-card">
-        <div class="card-header">
-          <div class="card-title-group">
-            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="3" y1="9" x2="21" y2="9"></line>
-              <line x1="3" y1="15" x2="21" y2="15"></line>
-              <line x1="9" y1="9" x2="9" y2="21"></line>
+    <!-- ─── 2. CALM & CONFIDENT HERO ───────────────────────────────────────── -->
+    <section class="hero-section">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          Ruang tenang untuk menyelesaikan hal yang berarti.
+        </h1>
+        <p class="hero-subtitle">
+          TaktVibe adalah ruang kerja personal yang cepat dan bebas distraksi. Menggabungkan kemudahan papan Kanban, kalender tenggat, dan catatan terstruktur dalam satu tempat.
+        </p>
+
+        <div class="hero-cta-wrap">
+          <NuxtLink
+            :to="authStore.isAuthenticated ? '/dashboard' : '/register'"
+            class="btn-primary btn-large"
+          >
+            <span>{{ authStore.isAuthenticated ? 'Buka Dashboard' : 'Mulai Sekarang — Gratis' }}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
-            <h2 class="card-title">Daftar Tugas</h2>
-            <span
-              v-if="activeProject"
-              class="active-space-pill"
-              :style="{ color: activeProject.color, borderColor: `${activeProject.color}40`, background: `${activeProject.color}15` }"
-              :title="`Menampilkan tugas di ruang kerja: ${activeProject.name}`"
+          </NuxtLink>
+
+          <button type="button" class="btn-ghost btn-large" @click="scrollToSection('demo')">
+            <span>Coba Interaktif</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 3. THE FOCUS CANVAS: GENUINE LIVE WORKBENCH ─────────────────────── -->
+    <section id="demo" class="canvas-section">
+      <div class="focus-board">
+        <!-- Board Header -->
+        <div class="board-header">
+          <div class="board-heading-wrap">
+            <span class="board-dot"></span>
+            <span class="board-title">Fokus Hari Ini</span>
+            <span class="board-status">{{ completedCount }} dari {{ tasks.length }} selesai</span>
+          </div>
+
+          <!-- Board Filters -->
+          <div class="board-filter-group">
+            <button
+              type="button"
+              class="filter-pill"
+              :class="{ 'active': activeFilter === 'all' }"
+              @click="activeFilter = 'all'"
             >
-              <span class="active-space-icon">{{ activeProject.icon }}</span>
-              <span class="active-space-name">{{ activeProject.name }}</span>
-              <button
-                type="button"
-                class="clear-space-btn"
-                @click.stop="taskStore.setActiveProject(null)"
-                title="Hapus filter ruang kerja"
-              >
-                &times;
-              </button>
-            </span>
+              Semua ({{ tasks.length }})
+            </button>
+            <button
+              type="button"
+              class="filter-pill"
+              :class="{ 'active': activeFilter === 'active' }"
+              @click="activeFilter = 'active'"
+            >
+              Aktif ({{ activeTasks.length }})
+            </button>
+            <button
+              type="button"
+              class="filter-pill"
+              :class="{ 'active': activeFilter === 'done' }"
+              @click="activeFilter = 'done'"
+            >
+              Selesai ({{ completedTasks.length }})
+            </button>
           </div>
-          <div class="card-header-actions">
-            <!-- Segmented View Switcher: Tabel vs Kanban -->
-            <div class="view-switcher-group" role="group" aria-label="Pilih Tampilan">
-              <button
-                type="button"
-                class="view-switch-btn"
-                :class="{ active: viewMode === 'table' }"
-                @click="taskStore.setViewMode('table')"
-                id="view-switch-table"
-                title="Tampilan Tabel Data"
-              >
+        </div>
+
+        <!-- Task List Rows -->
+        <div class="task-rows">
+          <div
+            v-for="task in filteredTasks"
+            :key="task.id"
+            class="task-row"
+            :class="{ 'is-done': task.completed }"
+            @click="toggleTask(task.id)"
+          >
+            <!-- Checkbox -->
+            <button
+              type="button"
+              class="task-checkbox"
+              :class="{ 'checked': task.completed }"
+              :aria-label="task.completed ? 'Batalkan selesai' : 'Tandai selesai'"
+              @click.stop="toggleTask(task.id)"
+            >
+              <svg v-if="task.completed" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+
+            <!-- Title -->
+            <span class="task-title-text">{{ task.title }}</span>
+
+            <!-- Category & Due Date -->
+            <div class="task-meta">
+              <span class="task-tag">{{ task.space }}</span>
+              <span v-if="task.hasAttachment" class="task-attachment-icon" title="Ada file lampiran">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="3" y1="9" x2="21" y2="9"></line>
-                  <line x1="3" y1="15" x2="21" y2="15"></line>
-                  <line x1="9" y1="9" x2="9" y2="21"></line>
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                 </svg>
-                <span>Tabel</span>
-              </button>
-              <button
-                type="button"
-                class="view-switch-btn"
-                :class="{ active: viewMode === 'kanban' }"
-                @click="taskStore.setViewMode('kanban')"
-                id="view-switch-kanban"
-                title="Tampilan Papan Kanban"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="9" y1="3" x2="9" y2="21"></line>
-                  <line x1="15" y1="3" x2="15" y2="21"></line>
-                </svg>
-                <span>Kanban</span>
-              </button>
-              <button
-                type="button"
-                class="view-switch-btn"
-                :class="{ active: viewMode === 'calendar' }"
-                @click="taskStore.setViewMode('calendar')"
-                id="view-switch-calendar"
-                title="Tampilan Kalender & Jadwal"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-                <span>Kalender</span>
-              </button>
+              </span>
+              <span class="task-due-date">{{ task.dueDate }}</span>
             </div>
+          </div>
+        </div>
 
-            <span class="card-badge">{{ filteredTasks.length }} tugas</span>
-            <!-- Tombol Download Backup -->
-            <div class="backup-menu-wrap" ref="backupMenuRef">
-              <button
-                class="backup-btn"
-                @click="taskStore.toggleBackupMenu"
-                :disabled="backupLoading"
-                title="Download Backup CSV"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                {{ backupLoading ? 'Memuat...' : 'Backup CSV' }}
-              </button>
+        <!-- Quick Add Inline Field -->
+        <form class="quick-add-wrap" @submit.prevent="handleAddTask">
+          <div class="add-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </div>
+          <input
+            v-model="newTaskInput"
+            type="text"
+            placeholder="Tambah tugas baru langsung di sini, lalu tekan Enter..."
+            class="quick-add-input"
+          />
+          <button v-if="newTaskInput.trim()" type="submit" class="quick-add-btn">
+            Tambah
+          </button>
+        </form>
 
-              <!-- Dropdown daftar backup -->
-              <div v-if="showBackupMenu" class="backup-dropdown">
-                <div class="backup-dropdown-header">File Backup Tersedia</div>
-                <div v-if="backupLoading" class="backup-loading">
-                  <span class="pulse-dot"></span> Memuat daftar...
-                </div>
-                <div v-else-if="latestBackups.length === 0" class="backup-empty">
-                  Belum ada file backup.<br/>
-                  <span class="backup-hint">Jalankan Edge Function terlebih dahulu.</span>
-                </div>
-                <ul v-else class="backup-list">
-                  <li
-                    v-for="file in latestBackups"
-                    :key="file.name"
-                    class="backup-item"
-                    @click="taskStore.downloadBackup(file.name)"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                    </svg>
-                    <div class="backup-item-info">
-                      <span class="backup-item-name">{{ file.name }}</span>
-                      <span class="backup-item-meta">{{ taskStore.formatBackupDate(file.created_at) }} · {{ taskStore.formatFileSize(file.size_bytes) }}</span>
-                    </div>
-                    <svg class="backup-item-dl" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                  </li>
-                </ul>
+        <!-- Subtle Board Note -->
+        <div class="board-footnote">
+          <span>Sentuh atau klik kartu tugas mana saja untuk memperbarui status secara langsung.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 4. EDITORIAL STORY VIGNETTES (UNNESTED & CLEAN) ────────────────── -->
+    <section id="fitur" class="stories-section">
+      <!-- Story 1: Tiga Sudut Pandang -->
+      <div class="story-item">
+        <div class="story-narrative">
+          <h2 class="story-title">Tiga cara melihat pekerjaan Anda.</h2>
+          <p class="story-desc">
+            Kadang Anda memerlukan papan Kanban visual saat memproses alur kerja harian. Di hari lain, Anda memerlukan kalender bulanan untuk mengantisipasi tenggat waktu, atau tabel ringkas untuk melihat puluhan tugas sekaligus.
+          </p>
+          <p class="story-desc">
+            TaktVibe menyediakan ketiganya dalam satu data terpadu — tanpa perlu menduplikasi catatan Anda.
+          </p>
+        </div>
+
+        <!-- Single clean unnested surface (no card-inside-card) -->
+        <div class="story-preview-surface">
+          <!-- Segmented Tab Toggle -->
+          <div class="switch-tabs">
+            <button
+              type="button"
+              class="view-tab"
+              :class="{ 'active': previewView === 'kanban' }"
+              @click="previewView = 'kanban'"
+            >
+              Papan Kanban
+            </button>
+            <button
+              type="button"
+              class="view-tab"
+              :class="{ 'active': previewView === 'calendar' }"
+              @click="previewView = 'calendar'"
+            >
+              Kalender
+            </button>
+            <button
+              type="button"
+              class="view-tab"
+              :class="{ 'active': previewView === 'table' }"
+              @click="previewView = 'table'"
+            >
+              Tabel
+            </button>
+          </div>
+
+          <!-- Unnested View Showcase -->
+          <div v-if="previewView === 'kanban'" class="snippet-kanban">
+            <div class="snippet-col">
+              <span class="snippet-col-label">Proses Pengerjaan</span>
+              <div class="snippet-mini-card">
+                <span class="mini-card-text">Integrasi API Storage Supabase</span>
+                <span class="mini-card-tag">Prioritas Tinggi</span>
+              </div>
+            </div>
+            <div class="snippet-col">
+              <span class="snippet-col-label">Rampung</span>
+              <div class="snippet-mini-card done">
+                <span class="mini-card-text">Audit Rasio Kontras WCAG</span>
+                <span class="mini-card-tag done-tag">Selesai</span>
               </div>
             </div>
           </div>
-        </div>
-        <div class="card-body no-padding">
-          <div v-if="viewMode === 'table'" key="table" class="view-panel">
-            <TaskList
-              :tasks="filteredTasks"
-              :pending="pending"
-              @toggle="handleToggleTask"
-              @delete="handleDeleteTask"
-              @edit="handleEditTask"
-              @update-status="handleUpdateStatus"
-              @open-lightbox="taskStore.openLightbox"
-            />
-          </div>
-          <div v-else-if="viewMode === 'kanban'" key="kanban" class="view-panel">
-            <KanbanBoard
-              :tasks="filteredTasks"
-              :pending="pending"
-              @edit="handleEditTask"
-              @delete="handleDeleteTask"
-              @update-status="handleUpdateStatus"
-            />
-          </div>
-          <div v-else-if="viewMode === 'calendar'" key="calendar" class="view-panel">
-            <CalendarView
-              :tasks="filteredTasks"
-              :pending="pending"
-              @update-due-date="handleUpdateDueDate"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Activity Log Card -->
-    <div class="content-card activity-card">
-      <div class="card-header">
-        <div class="card-title-group">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
-          <h2 class="card-title">Realtime Activity Feed</h2>
-        </div>
-        <div class="realtime-status-pill" :class="{ connected: isRealtimeConnected }">
-          <span class="realtime-dot" :class="{ connected: isRealtimeConnected }"></span>
-          <span>{{ isRealtimeConnected ? 'Live Realtime' : 'Menghubungkan...' }}</span>
-        </div>
-      </div>
-      <div class="card-body activity-body">
-        <div v-if="activityLogs.length === 0" class="log-empty">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
-          <p>Menunggu aktivitas realtime...</p>
-        </div>
-        <TransitionGroup name="log-list" tag="ul" class="log-list">
-          <li v-for="log in activityLogs" :key="log.id" class="log-item">
-            <span class="log-badge" :class="log.type">
-              {{ log.type === 'INSERT' ? 'BARU' : log.type === 'DELETE' ? 'HAPUS' : 'UPDATE' }}
-            </span>
-            <div class="log-content">
-              <span class="log-task">{{ log.task }}</span>
-              <span class="log-time">{{ log.time }}</span>
+          <div v-else-if="previewView === 'calendar'" class="snippet-calendar">
+            <div class="cal-mini-header">Oktober 2026</div>
+            <div class="cal-mini-days">
+              <span class="cal-mini-cell">01</span>
+              <span class="cal-mini-cell active">02 <small>Deadline UI</small></span>
+              <span class="cal-mini-cell">03</span>
+              <span class="cal-mini-cell">04</span>
+              <span class="cal-mini-cell">05</span>
             </div>
-          </li>
-        </TransitionGroup>
+          </div>
+
+          <div v-else class="snippet-table">
+            <div class="table-mini-row head">
+              <span>Judul</span>
+              <span>Ruang</span>
+              <span>Status</span>
+            </div>
+            <div class="table-mini-row">
+              <span>Arsitektur Antarmuka Baru</span>
+              <span>Design</span>
+              <span class="text-success">Rampung</span>
+            </div>
+            <div class="table-mini-row">
+              <span>Penyusunan Rencana Q4</span>
+              <span>Produk</span>
+              <span class="text-warning">Aktif</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </main>
+
+      <!-- Story 2: Lampiran Dokumen & Media -->
+      <div class="story-item reverse">
+        <div class="story-narrative">
+          <h2 class="story-title">Lampiran dan dokumen di tempat yang tepat.</h2>
+          <p class="story-desc">
+            Sematkan tangkapan layar, bukti pengerjaan, atau file pendukung langsung di dalam kartu tugas. Tidak perlu mencari tautan terpisah di aplikasi perpesanan.
+          </p>
+          <p class="story-desc">
+            Dilengkapi penampil gambar Lightbox bawaan agar Anda dapat meninjau aset secara instan tanpa harus mengunduh ulang.
+          </p>
+        </div>
+
+        <!-- Single clean card, not nested -->
+        <div class="attachment-preview-card">
+          <div class="file-thumb">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+          </div>
+          <div class="file-info">
+            <span class="file-name">spec-antarmuka-v2.pdf</span>
+            <span class="file-meta">Dokumen PDF · 2.4 MB · Tersimpan di Cloud</span>
+          </div>
+          <span class="file-badge">Tersimpan</span>
+        </div>
+      </div>
+
+      <!-- Story 3: Kedaulatan & Keamanan Data -->
+      <div id="kedaulatan" class="story-item">
+        <div class="story-narrative">
+          <h2 class="story-title">Data Anda sepenuhnya milik Anda.</h2>
+          <p class="story-desc">
+            Tanpa keterikatan platform (*zero vendor lock-in*). Ekspor seluruh riwayat tugas Anda ke format CSV atau JSON kapan pun Anda inginkan.
+          </p>
+          <p class="story-desc">
+            Setiap catatan dilindungi oleh isolasi akun mandiri (*Row-Level Security*), memastikan tidak ada orang lain yang dapat melihat tugas pribadi Anda.
+          </p>
+        </div>
+
+        <!-- Single clean card, not nested -->
+        <div class="export-preview-card">
+          <div class="export-top">
+            <span class="export-label">Format Ekspor Mandiri</span>
+            <span class="export-status">Siap Diunduh</span>
+          </div>
+          <div class="export-buttons">
+            <div class="export-chip">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Unduh JSON Lengkap</span>
+            </div>
+            <div class="export-chip">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Ekspor Tabel CSV</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 5. QUIET INVITATION ────────────────────────────────────────────── -->
+    <section class="invitation-section">
+      <div class="invitation-inner">
+        <h2 class="invitation-title">Mulai hari kerja Anda dengan lebih teratur.</h2>
+        <p class="invitation-desc">
+          Buka akun gratis dalam 30 detik. Tanpa biaya langganan, tanpa setup rumit.
+        </p>
+
+        <div class="invitation-actions">
+          <NuxtLink
+            :to="authStore.isAuthenticated ? '/dashboard' : '/register'"
+            class="btn-primary btn-large"
+          >
+            <span>{{ authStore.isAuthenticated ? 'Buka Dashboard' : 'Daftar Akun Baru' }}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </NuxtLink>
+
+          <NuxtLink v-if="!authStore.isAuthenticated" to="/login" class="btn-ghost btn-large">
+            <span>Sudah Punya Akun? Masuk</span>
+          </NuxtLink>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 6. MINIMAL FOOTER ──────────────────────────────────────────────── -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-left">
+          <NuxtLink to="/" class="brand-link small">
+            <img src="/images/logo-icon.png" alt="TaktVibe" class="brand-icon small" />
+            <span class="brand-name">TaktVibe</span>
+          </NuxtLink>
+          <span class="footer-tagline">Ruang kerja personal yang tenang dan terarah.</span>
+        </div>
+
+        <div class="footer-right">
+          <NuxtLink to="/dashboard" class="footer-link">Dashboard</NuxtLink>
+          <NuxtLink to="/login" class="footer-link">Masuk</NuxtLink>
+          <NuxtLink to="/register" class="footer-link">Daftar</NuxtLink>
+          <NuxtLink to="/forgot-password" class="footer-link">Lupa Sandi</NuxtLink>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>&copy; {{ currentYear }} TaktVibe. Dirancang untuk kejelasan dan fokus.</span>
+      </div>
+    </footer>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { useTaskStore } from '~/stores/taskStore'
-import type { Task, TaskFormSubmitPayload, TaskEditPayload, TaskStatus } from '~/types/task'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useAuthStore } from '~/stores/authStore'
+import { useTheme } from '~/composables/useTheme'
 
-// ─── Pinia Store ────────────────────────────────────────────────────────────
-const taskStore = useTaskStore()
-const {
-  tasks,
-  pending,
-  uploading,
-  latestBackups,
-  backupLoading,
-  showBackupMenu,
-  activityLogs,
-  isRealtimeConnected,
-  cronStatus,
-  cronLoading,
-  completedCount,
-  activeCount,
-  progressPercent,
-  viewMode,
-  filteredTasks,
-  activeProject
-} = storeToRefs(taskStore)
+definePageMeta({
+  layout: false
+})
 
-// ─── Template Refs ──────────────────────────────────────────────────────────
-const taskFormRef = ref<{ resetForm: () => void } | null>(null)
-const backupMenuRef = ref<HTMLDivElement | null>(null)
+const authStore = useAuthStore()
+const { isDark, toggleTheme } = useTheme()
 
-// ─── Event Handlers ─────────────────────────────────────────────────────────
-const handleFormSubmit = async (payload: TaskFormSubmitPayload): Promise<void> => {
-  await taskStore.addTask(payload)
-  if (!taskStore.uploading) {
-    taskFormRef.value?.resetForm()
+const currentYear = new Date().getFullYear()
+const isScrolled = ref<boolean>(false)
+const previewView = ref<'kanban' | 'calendar' | 'table'>('kanban')
+
+const navLinks = [
+  { label: 'Coba Konsol', target: 'demo' },
+  { label: 'Fitur Utama', target: 'fitur' },
+  { label: 'Privasi & Data', target: 'kedaulatan' }
+]
+
+const scrollToSection = (target: string) => {
+  if (!import.meta.client) return
+  const el = document.getElementById(target)
+  if (!el) return
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  el.scrollIntoView({
+    behavior: reduceMotion ? 'auto' : 'smooth',
+    block: 'start'
+  })
+}
+
+// Live Focus Canvas Interactive State
+interface LiveTask {
+  id: string
+  title: string
+  space: string
+  dueDate: string
+  completed: boolean
+  hasAttachment?: boolean
+}
+
+const tasks = ref<LiveTask[]>([
+  {
+    id: 't1',
+    title: 'Penyusunan alur prioritas mingguan',
+    space: 'Perencanaan',
+    dueDate: 'Hari ini',
+    completed: true,
+    hasAttachment: false
+  },
+  {
+    id: 't2',
+    title: 'Tinjau desain antarmuka & rasio kontras',
+    space: 'Desain',
+    dueDate: 'Hari ini',
+    completed: false,
+    hasAttachment: true
+  },
+  {
+    id: 't3',
+    title: 'Uji coba sinkronisasi realtime antartab',
+    space: 'Teknik',
+    dueDate: 'Besok',
+    completed: false,
+    hasAttachment: false
+  },
+  {
+    id: 't4',
+    title: 'Ekspor cadangan data JSON ke arsip lokal',
+    space: 'Data',
+    dueDate: '05 Okt',
+    completed: false,
+    hasAttachment: true
+  }
+])
+
+const activeFilter = ref<'all' | 'active' | 'done'>('all')
+const newTaskInput = ref<string>('')
+
+const completedTasks = computed(() => tasks.value.filter(t => t.completed))
+const activeTasks = computed(() => tasks.value.filter(t => !t.completed))
+const completedCount = computed(() => completedTasks.value.length)
+
+const filteredTasks = computed(() => {
+  if (activeFilter.value === 'active') return activeTasks.value
+  if (activeFilter.value === 'done') return completedTasks.value
+  return tasks.value
+})
+
+function toggleTask(id: string) {
+  const task = tasks.value.find(t => t.id === id)
+  if (task) {
+    task.completed = !task.completed
   }
 }
 
-const handleToggleTask = (task: Task): void => {
-  taskStore.toggleTask(task)
+function handleAddTask() {
+  const title = newTaskInput.value.trim()
+  if (!title) return
+
+  tasks.value.push({
+    id: `custom-${Date.now()}`,
+    title,
+    space: 'Umum',
+    dueDate: 'Hari ini',
+    completed: false
+  })
+  newTaskInput.value = ''
 }
 
-const handleUpdateStatus = ({ task, status }: { task: Task; status: TaskStatus }): void => {
-  taskStore.updateTaskStatus(task, status)
-}
-
-const handleEditTask = ({ task, payload }: { task: Task; payload: string | TaskEditPayload }): void => {
-  taskStore.editTask(task, payload)
-}
-
-const handleDeleteTask = (task: Task): void => {
-  taskStore.deleteTask(task)
-}
-
-const handleUpdateDueDate = ({ task, dueDate }: { task: Task; dueDate: string | null }): void => {
-  taskStore.updateTaskDueDate(task, dueDate)
-}
-
-const handleOutsideClick = (e: MouseEvent): void => {
-  if (backupMenuRef.value && !backupMenuRef.value.contains(e.target as Node)) {
-    taskStore.closeBackupMenu()
+const handleScroll = () => {
+  if (import.meta.client) {
+    isScrolled.value = window.scrollY > 20
   }
 }
 
-// ─── Lifecycle ──────────────────────────────────────────────────────────────
-onMounted(async () => {
-  await taskStore.fetchTasks()
-  await taskStore.fetchCronStatus()
-  document.addEventListener('click', handleOutsideClick)
-  taskStore.initRealtime()
+onMounted(() => {
+  if (import.meta.client) {
+    window.addEventListener('scroll', handleScroll, { passive: true })
+  }
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleOutsideClick)
+  if (import.meta.client) {
+    window.removeEventListener('scroll', handleScroll)
+  }
 })
 </script>
 
 <style scoped>
-/* ─── PAGE CONTENT ────────────────────────────────────────────────────────── */
-.page-content {
-  flex: 1;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  background: var(--bg-base, #090d16);
+/* ─── BASE RESET & PALETTE ───────────────────────────────────────────────── */
+.landing-page {
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* ─── EXECUTIVE BENTO METRIC HEADER ───────────────────────────────────────── */
-.metrics-container {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  background: #0f172a;
-  border: 1px solid #1f2a3f;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.metric-segment {
-  padding: 16px 20px;
-  border-right: 1px solid #1f2a3f;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
-  transition: background 0.15s ease;
 }
 
-.metric-segment:last-child {
-  border-right: none;
+/* ─── 1. TOP NAV ─────────────────────────────────────────────────────────── */
+/* Keeps anchored sections clear of the sticky header when scrolled to */
+#demo,
+#fitur,
+#kedaulatan {
+  scroll-margin-top: 84px;
 }
 
-.metric-segment:hover {
-  background: #111a2f;
-}
-
-.metric-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.metric-label {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #94a3b8;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.metric-dot-indicator {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #3b82f6;
-}
-
-.metric-pill {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 10px;
-}
-
-.metric-pill.success {
-  background: rgba(34, 197, 94, 0.12);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.25);
-}
-
-.metric-pill.warning {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.25);
-}
-
-.metric-pct-badge {
-  font-size: 12px;
-  font-weight: 700;
-  color: #f1f5f9;
-  background: #1e293b;
-  border: 1px solid #2e3e5e;
-  padding: 2px 8px;
-  border-radius: 6px;
-}
-
-.metric-main {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.metric-value {
-  font-size: 26px;
-  font-weight: 700;
-  color: #f8fafc;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.metric-value.text-success {
-  color: #4ade80;
-}
-
-.metric-value.text-warning {
-  color: #fbbf24;
-}
-
-.metric-unit {
-  font-size: 12px;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.metric-sub {
-  font-size: 11.5px;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-/* Progress Segment */
-.metric-progress-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.metric-progress-track {
-  height: 6px;
-  background: #1e293b;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.metric-progress-fill {
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   width: 100%;
-  height: 100%;
-  background: var(--accent-gradient, linear-gradient(135deg, #005afb, #6120f7));
-  border-radius: 999px;
-  transform-origin: left;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--bg-base);
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.metric-progress-caption {
-  font-size: 11px;
-  color: #94a3b8;
-  font-weight: 500;
+.site-header.scrolled {
+  background: rgba(9, 13, 22, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom-color: var(--border-color);
 }
 
-/* ─── CONTENT GRID ────────────────────────────────────────────────────────── */
-.content-grid {
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 20px;
-  align-items: stretch;
+html.light .site-header.scrolled {
+  background: rgba(255, 255, 255, 0.94);
 }
 
-/* ─── CARD ────────────────────────────────────────────────────────────────── */
-.content-card {
-  background: #0f172a;
-  border: 1px solid #1f2a3f;
-  border-radius: 12px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.card-header {
+.header-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 18px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #1f2a3f;
-  background: #0d1422;
-  flex-shrink: 0;
 }
 
-.card-title-group {
+.brand-link {
   display: flex;
   align-items: center;
-  gap: 9px;
-  color: #cbd5e1;
+  gap: 10px;
+  text-decoration: none;
 }
 
-.card-title {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: #f1f5f9;
-  margin: 0;
-  letter-spacing: -0.01em;
+.brand-icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
 }
 
-.active-space-pill {
+.brand-icon.small {
+  width: 20px;
+  height: 20px;
+}
+
+.brand-name {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-heading);
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.nav-item {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  cursor: pointer;
+  transition: color 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-item:hover {
+  color: var(--text-primary);
+}
+
+.nav-item:focus-visible {
+  outline: none;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--accent-primary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.theme-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  border: 1px solid;
-  font-size: 11.5px;
-  font-weight: 550;
-  margin-left: 4px;
-}
-
-.active-space-icon {
-  font-size: 11.5px;
-  line-height: 1;
-}
-
-.active-space-name {
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.clear-space-btn {
-  background: none;
-  border: none;
-  color: currentColor;
-  opacity: 0.7;
-  font-size: 14px;
-  line-height: 1;
-  padding: 0 2px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
 }
 
-.clear-space-btn:hover {
-  opacity: 1;
+.theme-toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
 }
 
-.card-header-actions {
+.nav-login-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.nav-login-link:hover {
+  color: var(--text-primary);
+}
+
+/* ─── BUTTONS ────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--accent-primary);
+  color: #ffffff;
+  border: 1px solid var(--accent-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary:hover {
+  background: var(--accent-primary-hover);
+  border-color: var(--accent-primary-hover);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.btn-ghost:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+}
+
+.btn-large {
+  padding: 12px 24px;
+  font-size: 0.9375rem;
+}
+
+/* ─── 2. HERO SECTION ────────────────────────────────────────────────────── */
+.hero-section {
+  padding: 84px 24px 48px;
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.hero-title {
+  font-size: clamp(2.3rem, 5.5vw, 3.8rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  color: var(--text-heading);
+  margin: 0 0 22px;
+}
+
+.hero-subtitle {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 auto 36px;
+  max-width: 620px;
+}
+
+.hero-cta-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* ─── 3. THE FOCUS CANVAS (NATURAL ELEVATION, NO WIDE SHADOW) ────────────── */
+.canvas-section {
+  padding: 36px 24px 84px;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.focus-board {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  /* NATURAL ELEVATION COMPLIANT WITH AGENTS.md (No giant 32px diffuse glow) */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+html.light .focus-board {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.board-header {
+  padding: 16px 20px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.board-heading-wrap {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* ─── SEGMENTED VIEW SWITCHER ─────────────────────────────────────────────── */
-.view-switcher-group {
-  display: inline-flex;
-  align-items: center;
-  background: #090d16;
-  border: 1px solid #1f2a3f;
-  border-radius: 8px;
-  padding: 2px;
-  gap: 2px;
+.board-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
 }
 
-.view-switch-btn {
-  display: inline-flex;
-  align-items: center;
+.board-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.board-status {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.board-filter-group {
+  display: flex;
   gap: 6px;
+}
+
+.filter-pill {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
   background: transparent;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #94a3b8;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
   cursor: pointer;
-  font-family: inherit;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition: color 0.15s, background-color 0.15s;
 }
 
-.view-switch-btn:hover:not(.active) {
-  color: #f1f5f9;
-  background: rgba(255, 255, 255, 0.03);
+.filter-pill:hover {
+  color: var(--text-primary);
 }
 
-.view-switch-btn.active {
-  color: #f1f5f9;
-  background: #172136;
+.filter-pill.active {
+  background: var(--bg-elevated);
+  border-color: var(--border-color);
+  color: var(--text-heading);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
-.view-switch-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.4);
-}
-
-/* ─── VIEW PANEL ANIMATION ────────────────────────────────────────────────── */
-.view-panel {
-  width: 100%;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  animation: viewPanelFade 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes viewPanelFade {
-  from {
-    opacity: 0;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.card-badge {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #cbd5e1;
-  background: #111726;
-  border: 1px solid #1f2a3f;
-  padding: 3px 9px;
-  border-radius: 12px;
-}
-
-.card-body {
-  padding: 20px;
-  flex: 1;
+.task-rows {
   display: flex;
   flex-direction: column;
 }
 
-.card-body.no-padding {
-  padding: 0;
-  flex: 1;
+.task-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ─── BACKUP MENU ─────────────────────────────────────────────────────────── */
-.backup-menu-wrap {
-  position: relative;
+.task-row:hover {
+  background: var(--bg-surface);
 }
 
-.backup-btn {
+.task-checkbox {
+  width: 19px;
+  height: 19px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border-subtle);
+  background: transparent;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 6px;
-  border: 1px solid #2d3b55;
-  background: #111726;
-  color: #f1f5f9;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-  font-family: inherit;
-}
-
-.backup-btn:hover:not(:disabled) {
-  background: #172136;
-  border-color: var(--accent-primary, #005afb);
+  justify-content: center;
   color: #ffffff;
-}
-
-.backup-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.backup-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  width: 270px;
-  background: #111726;
-  border: 1px solid #1f2a3f;
-  border-radius: 10px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
-  z-index: 50;
-  overflow: hidden;
-}
-
-.backup-dropdown-header {
-  padding: 10px 14px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid #1f2a3f;
-  background: #0d1422;
-}
-
-.backup-loading, .backup-empty {
-  padding: 16px 14px;
-  font-size: 12px;
-  color: #cbd5e1;
-  text-align: center;
-}
-
-.backup-hint {
-  font-size: 11px;
-  color: #94a3b8;
-  margin-top: 4px;
-  display: block;
-}
-
-.backup-list {
-  list-style: none;
-  margin: 0;
-  padding: 4px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.backup-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 6px;
   cursor: pointer;
-  color: #cbd5e1;
-  transition: background 0.15s ease;
-}
-
-.backup-item:hover {
-  background: #172136;
-  color: #f1f5f9;
-}
-
-.backup-item-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.backup-item-name {
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.backup-item-meta {
-  font-size: 11.5px;
-  color: #94a3b8;
-}
-
-.backup-item-dl {
-  color: #cbd5e1;
-  opacity: 0.7;
-}
-
-.backup-item:hover .backup-item-dl {
-  opacity: 1;
-  color: #ffffff;
-}
-
-/* ─── ACTIVITY LOG ────────────────────────────────────────────────────────── */
-.realtime-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #94a3b8;
-  background: #111726;
-  border: 1px solid #1f2a3f;
-  padding: 3px 9px;
-  border-radius: 12px;
-}
-
-.realtime-status-pill.connected {
-  color: #4ade80;
-  border-color: rgba(34, 197, 94, 0.25);
-}
-
-.realtime-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #64748b;
   flex-shrink: 0;
-  position: relative;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
-.realtime-dot.connected {
-  background: #22c55e;
+.task-checkbox.checked {
+  background: var(--color-success);
+  border-color: var(--color-success);
 }
 
-.realtime-dot.connected::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(34, 197, 94, 0.5);
-  animation: radar-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+.task-title-text {
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  flex-grow: 1;
+  transition: color 0.15s;
 }
 
-@keyframes radar-ping {
-  0% { transform: scale(1); opacity: 0.9; }
-  100% { transform: scale(2.4); opacity: 0; }
+.task-row.is-done .task-title-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
 }
 
-.activity-body {
-  padding: 0 !important;
-  max-height: 280px;
-  overflow-y: auto;
-}
-
-.log-empty {
-  padding: 32px 16px;
-  text-align: center;
-  color: #94a3b8;
+.task-meta {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 10px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
 }
 
-.log-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.task-tag {
+  padding: 4px 9px;
+  border-radius: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
-.log-item {
+.task-attachment-icon {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.task-due-date {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.quick-add-wrap {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 20px;
-  border-bottom: 1px solid #172136;
-  transition: background 0.15s ease;
+  padding: 14px 20px;
+  background: var(--bg-base);
 }
 
-.log-item:hover {
-  background: #0d1422;
+.add-icon {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
 }
 
-.log-item:last-child {
+.quick-add-input {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.quick-add-input::placeholder {
+  color: var(--text-muted);
+}
+
+.quick-add-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--accent-primary);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+
+.board-footnote {
+  padding: 12px 20px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ─── 4. EDITORIAL STORIES (UNNESTED & ACCESSIBLE) ────────────────────────── */
+.stories-section {
+  padding: 64px 24px 96px;
+  max-width: 1080px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 96px;
+}
+
+.story-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.story-item.reverse {
+  direction: rtl;
+}
+
+.story-item.reverse .story-narrative,
+.story-item.reverse .attachment-preview-card {
+  direction: ltr;
+}
+
+.story-narrative {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.story-title {
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.025em;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.story-desc {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ─── UNNESTED PREVIEW SURFACE (NO NESTED CARDS) ─────────────────────────── */
+.story-preview-surface {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.switch-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-surface);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.view-tab {
+  flex: 1;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.view-tab.active {
+  background: var(--bg-elevated);
+  color: var(--text-heading);
+  font-weight: 600;
+}
+
+/* Kanban snippet (Direct, unnested) */
+.snippet-kanban {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.snippet-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.snippet-col-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.snippet-mini-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini-card-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+/* Functional tags: min 13px, high-contrast accessible */
+.mini-card-tag {
+  font-size: 0.8125rem;
+  color: var(--color-warning);
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(251, 191, 36, 0.12);
+  align-self: flex-start;
+}
+
+.mini-card-tag.done-tag {
+  color: var(--color-success);
+  background: rgba(74, 222, 128, 0.12);
+}
+
+.snippet-mini-card.done .mini-card-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* Calendar snippet */
+.snippet-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cal-mini-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.cal-mini-days {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.cal-mini-cell {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cal-mini-cell.active {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.cal-mini-cell small {
+  font-size: 0.75rem;
+  color: var(--color-warning);
+  font-weight: 500;
+}
+
+/* Table snippet */
+.snippet-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-mini-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.table-mini-row.head {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+}
+
+.table-mini-row:last-child {
   border-bottom: none;
 }
 
-.log-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 4px;
-  letter-spacing: 0.05em;
+/* Story 2 Attachment: Single unnested card */
+.attachment-preview-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
 }
 
-.log-badge.INSERT { background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.25); }
-.log-badge.UPDATE { background: rgba(79, 70, 229, 0.12); color: #a5b4fc; border: 1px solid rgba(79, 70, 229, 0.25); }
-.log-badge.DELETE { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.25); }
+.file-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
 
-.log-content {
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-grow: 1;
+}
+
+.file-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.file-meta {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.file-badge {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--color-success);
+}
+
+/* Story 3 Export: Single unnested card */
+.export-preview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.export-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.export-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.export-status {
+  font-size: 0.8125rem;
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.export-chip {
   flex: 1;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  min-width: 0;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
-.log-task {
-  font-size: 13px;
-  color: #f1f5f9;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 70%;
+/* ─── 5. QUIET INVITATION ────────────────────────────────────────────────── */
+.invitation-section {
+  padding: 80px 24px 96px;
+  text-align: center;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-surface);
 }
 
-.log-time {
-  font-size: 11px;
-  color: #94a3b8;
-  white-space: nowrap;
+.invitation-inner {
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-/* ─── RESPONSIVE ──────────────────────────────────────────────────────────── */
-@media (max-width: 1200px) {
-  .content-grid {
+.invitation-title {
+  font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text-heading);
+  margin: 0 0 14px;
+  line-height: 1.2;
+}
+
+.invitation-desc {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 auto 32px;
+}
+
+.invitation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ─── 6. MINIMAL FOOTER ──────────────────────────────────────────────────── */
+.site-footer {
+  margin-top: auto;
+  background: var(--bg-base);
+  border-top: 1px solid var(--border-color);
+  padding: 40px 24px 28px;
+}
+
+.footer-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.footer-tagline {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.footer-link {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footer-link:hover {
+  color: var(--text-primary);
+}
+
+.footer-bottom {
+  max-width: 1080px;
+  margin: 20px auto 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+/* ─── RESPONSIVE BREAKPOINTS ─────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .story-item,
+  .story-item.reverse {
     grid-template-columns: 1fr;
+    gap: 36px;
+    direction: ltr;
+  }
+
+  .main-nav {
+    display: none;
+  }
+
+  .header-inner {
+    padding: 14px 20px;
   }
 }
 
-@media (max-width: 900px) {
-  .metrics-container {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .metric-segment {
-    border-bottom: 1px solid #1f2a3f;
-  }
-}
-
-@media (max-width: 640px) {
-  .page-content {
-    padding: 16px;
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 60px 20px 36px;
   }
 
-  .metrics-container {
-    grid-template-columns: 1fr;
+  .task-meta {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .board-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .footer-right {
+    flex-wrap: wrap;
+    gap: 14px;
   }
 }
 </style>

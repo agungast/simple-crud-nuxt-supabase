@@ -157,10 +157,10 @@ const handleLogin = async () => {
   const success = await authStore.signIn(form)
   if (success) {
     try {
-      await navigateTo('/', { replace: true })
+      await navigateTo('/dashboard', { replace: true })
     } catch {
       if (import.meta.client) {
-        window.location.href = '/'
+        window.location.href = '/dashboard'
       }
     }
   }

@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     '~/assets/css/theme.css'
   ],
   app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       title: 'TaktVibe — Personal Task & Knowledge Management',
       meta: [

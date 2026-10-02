@@ -2,7 +2,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const user = useSupabaseUser()
   const supabase = useSupabaseClient()
 
-  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password']
+  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password']
   const isPublicRoute = publicRoutes.includes(to.path)
 
   let isAuthenticated = !!user.value
@@ -14,14 +14,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 
-  // 1. Jika belum login dan mencoba akses route yang diproteksi -> arahkan ke /login
+  // 1. Jika belum login dan mencoba akses route yang diproteksi (misal /dashboard) -> arahkan ke /login
   if (!isAuthenticated && !isPublicRoute) {
     return navigateTo('/login')
   }
 
-  // 2. Jika sudah login dan mencoba akses /login, /register, /forgot-password -> arahkan ke dashboard (/)
-  // Kecuali untuk halaman /reset-password yang memang butuh sesi recovery user
-  if (isAuthenticated && isPublicRoute && to.path !== '/reset-password') {
-    return navigateTo('/')
+  // 2. Jika sudah login dan mencoba akses /login, /register, /forgot-password -> arahkan ke /dashboard
+  // Catatan: Halaman /reset-password dikecualikan karena butuh sesi recovery user
+  const authOnlyPages = ['/login', '/register', '/forgot-password']
+  if (isAuthenticated && authOnlyPages.includes(to.path)) {
+    return navigateTo('/dashboard')
   }
 })
