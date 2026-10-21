@@ -49,29 +49,64 @@ DROP POLICY IF EXISTS "Users can update their own task attachments" ON public.ta
 DROP POLICY IF EXISTS "Users can delete their own task attachments" ON public.task_attachments;
 
 -- 6. Buat 4 Policy RLS untuk task_attachments
+--
+-- PENTING: `user_id` saja TIDAK cukup. Kolom itu hanya menyatakan siapa yang
+-- membuat baris, bukan siapa pemilik task induknya. Tanpa pengecekan parent,
+-- user A bisa menempelkan lampirannya ke task milik user B hanya dengan
+-- mengirim `task_id` milik B (trigger hanya mengisi `user_id`, tidak
+-- memvalidasi `task_id`). Semua policy karena itu memverifikasi task induk.
 CREATE POLICY "Users can view their own task attachments" 
 ON public.task_attachments FOR SELECT 
 TO authenticated 
-USING (auth.uid() = user_id);
+USING (
+  EXISTS (
+    SELECT 1 FROM public.todos t
+    WHERE t.id = task_attachments.task_id
+      AND t.user_id = auth.uid()
+  )
+);
 
 CREATE POLICY "Users can insert their own task attachments" 
 ON public.task_attachments FOR INSERT 
 TO authenticated 
 WITH CHECK (
-  auth.uid() = user_id 
-  OR user_id IS NULL
+  auth.uid() = user_id
+  AND EXISTS (
+    SELECT 1 FROM public.todos t
+    WHERE t.id = task_attachments.task_id
+      AND t.user_id = auth.uid()
+  )
 );
 
 CREATE POLICY "Users can update their own task attachments" 
 ON public.task_attachments FOR UPDATE 
 TO authenticated 
-USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
+USING (
+  EXISTS (
+    SELECT 1 FROM public.todos t
+    WHERE t.id = task_attachments.task_id
+      AND t.user_id = auth.uid()
+  )
+)
+WITH CHECK (
+  auth.uid() = user_id
+  AND EXISTS (
+    SELECT 1 FROM public.todos t
+    WHERE t.id = task_attachments.task_id
+      AND t.user_id = auth.uid()
+  )
+);
 
 CREATE POLICY "Users can delete their own task attachments" 
 ON public.task_attachments FOR DELETE 
 TO authenticated 
-USING (auth.uid() = user_id);
+USING (
+  EXISTS (
+    SELECT 1 FROM public.todos t
+    WHERE t.id = task_attachments.task_id
+      AND t.user_id = auth.uid()
+  )
+);
 
 -- 7. Aktifkan Broadcast Realtime untuk tabel task_attachments
 DO $$
@@ -89,34 +124,49 @@ END $$;
 ALTER TABLE public.task_attachments REPLICA IDENTITY FULL;
 
 -- 8. Setup Storage RLS untuk bucket 'project-crud' (Folder public/ dan private/)
+--
+-- Konvensi path FINAL: `{folder}/{userId}/{fileName}`
+-- Policy lengkap & final ada di 09_storage_rls_hardening.sql.
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'project-crud') THEN
-    -- A. INSERT: User terautentikasi bisa upload file ke public/ maupun private/
+    -- A. INSERT: hanya ke folder milik sendiri (segmen ke-2 = auth.uid())
     DROP POLICY IF EXISTS "Authenticated users can upload objects" ON storage.objects;
-    CREATE POLICY "Authenticated users can upload objects" 
-    ON storage.objects FOR INSERT 
-    TO authenticated 
-    WITH CHECK (bucket_id = 'project-crud');
+    CREATE POLICY "Authenticated users can upload objects"
+    ON storage.objects FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      bucket_id = 'project-crud'
+      AND (storage.foldername(name))[2] = auth.uid()::text
+    );
 
-    -- B. SELECT (Publik): Siapa saja / user bisa membaca file dalam folder public/
+    -- B. SELECT (Publik): folder `public/` saja, untuk anon & authenticated
     DROP POLICY IF EXISTS "Allow public read for public folder" ON storage.objects;
-    CREATE POLICY "Allow public read for public folder" 
-    ON storage.objects FOR SELECT 
+    CREATE POLICY "Allow public read for public folder"
+    ON storage.objects FOR SELECT
     USING (bucket_id = 'project-crud' AND (storage.foldername(name))[1] = 'public');
 
-    -- C. SELECT (Privat & Signed URLs): Hanya user pemilik yang bisa membaca / request Signed URL file private/
+    -- C. SELECT (Privat & Signed URLs): HANYA pemilik file, bukan sekadar
+    --    "user yang sudah login". Policy lama hanya mengecek folder dan
+    --    membiarkan setiap user terbaca oleh user lain.
     DROP POLICY IF EXISTS "Allow owner read for private folder" ON storage.objects;
-    CREATE POLICY "Allow owner read for private folder" 
-    ON storage.objects FOR SELECT 
-    TO authenticated 
-    USING (bucket_id = 'project-crud' AND (storage.foldername(name))[1] = 'private');
+    CREATE POLICY "Allow owner read for private folder"
+    ON storage.objects FOR SELECT
+    TO authenticated
+    USING (
+      bucket_id = 'project-crud'
+      AND (storage.foldername(name))[1] = 'private'
+      AND (storage.foldername(name))[2] = auth.uid()::text
+    );
 
-    -- D. DELETE: User terautentikasi bisa menghapus file miliknya
+    -- D. DELETE: hanya file milik sendiri
     DROP POLICY IF EXISTS "Authenticated users can delete objects" ON storage.objects;
-    CREATE POLICY "Authenticated users can delete objects" 
-    ON storage.objects FOR DELETE 
-    TO authenticated 
-    USING (bucket_id = 'project-crud');
+    CREATE POLICY "Authenticated users can delete objects"
+    ON storage.objects FOR DELETE
+    TO authenticated
+    USING (
+      bucket_id = 'project-crud'
+      AND (storage.foldername(name))[2] = auth.uid()::text
+    );
   END IF;
 END $$;

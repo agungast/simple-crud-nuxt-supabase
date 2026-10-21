@@ -38,6 +38,9 @@ DROP POLICY IF EXISTS "Users can update their own todos" ON public.todos;
 DROP POLICY IF EXISTS "Users can delete their own todos" ON public.todos;
 
 -- 6. Buat 4 Policy RLS baru:
+--
+-- `user_id` selalu diisi trigger BEFORE INSERT dengan `auth.uid()`, sehingga
+-- cabang `OR user_id IS NULL` di bawah tidak pernah dapat dieksploitasi.
 
 -- [SELECT] Pengguna hanya dapat membaca tugas miliknya sendiri
 CREATE POLICY "Users can view their own todos" 
@@ -46,17 +49,16 @@ FOR SELECT
 TO authenticated 
 USING (auth.uid() = user_id);
 
--- [INSERT] Pengguna dapat menambah tugas untuk dirinya sendiri (aman dengan fallback trigger)
+-- [INSERT] Pengguna hanya dapat menambah tugas untuk dirinya sendiri
 CREATE POLICY "Users can insert their own todos" 
 ON public.todos 
 FOR INSERT 
 TO authenticated 
-WITH CHECK (
-  auth.uid() = user_id 
-  OR user_id IS NULL
-);
+WITH CHECK (auth.uid() = user_id);
 
--- [UPDATE] Pengguna hanya dapat memperbarui tugas miliknya sendiri
+-- [UPDATE] Pengguna hanya dapat memperbarui tugas miliknya sendiri.
+-- Policy ini diperketat lagi di 10_rls_parent_ownership.sql untuk memverifikasi
+-- `project_id` benar-benar milik pengguna tersebut.
 CREATE POLICY "Users can update their own todos" 
 ON public.todos 
 FOR UPDATE 
@@ -72,28 +74,39 @@ TO authenticated
 USING (auth.uid() = user_id);
 
 -- 7. Policy untuk Storage Bucket 'project-crud' (untuk lampiran gambar)
+--
+-- CATATAN KEAMANAN: policy di blok ini hanya versi awal. Konvensi path storage
+-- yang final (dengan userId di segmen ke-2) beserta policy owner-scoped-nya
+-- didefinisikan di 09_storage_rls_hardening.sql. Policy di bawah tetap ditulis
+-- ketat agar instalasi baru tidak pernah berada dalam keadaan terbuka.
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'project-crud') THEN
-    -- Izinkan user yang login untuk mengunggah gambar
+    -- Izinkan user yang login untuk mengunggah gambar ke folder miliknya sendiri
     DROP POLICY IF EXISTS "Authenticated users can upload images" ON storage.objects;
-    CREATE POLICY "Authenticated users can upload images" 
-    ON storage.objects FOR INSERT 
-    TO authenticated 
-    WITH CHECK (bucket_id = 'project-crud');
+    CREATE POLICY "Authenticated users can upload images"
+    ON storage.objects FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      bucket_id = 'project-crud'
+      AND (storage.foldername(name))[2] = auth.uid()::text
+    );
 
-    -- Izinkan publik/user melihat gambar
+    -- HAPUS policy lama "Public can view images". Policy tersebut tidak
+    -- membatasi role maupun folder, sehingga role `anon` bisa membaca
+    -- file `private/` milik user lain. Hanya folder `public/` yang boleh
+    -- terbuka (lihat 09).
     DROP POLICY IF EXISTS "Public can view images" ON storage.objects;
-    CREATE POLICY "Public can view images" 
-    ON storage.objects FOR SELECT 
-    USING (bucket_id = 'project-crud');
 
-    -- Izinkan user login menghapus gambar
+    -- Izinkan user login menghapus file miliknya sendiri
     DROP POLICY IF EXISTS "Authenticated users can delete images" ON storage.objects;
-    CREATE POLICY "Authenticated users can delete images" 
-    ON storage.objects FOR DELETE 
-    TO authenticated 
-    USING (bucket_id = 'project-crud');
+    CREATE POLICY "Authenticated users can delete images"
+    ON storage.objects FOR DELETE
+    TO authenticated
+    USING (
+      bucket_id = 'project-crud'
+      AND (storage.foldername(name))[2] = auth.uid()::text
+    );
   END IF;
 END $$;
 

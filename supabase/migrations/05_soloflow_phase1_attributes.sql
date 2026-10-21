@@ -50,18 +50,26 @@ BEGIN
     NEW.image_url := NEW.cover_image_url;
   END IF;
 
-  -- Jika status diubah menjadi 'DONE', set is_completed = true
+  -- Normalisasi status: kolom `status` adalah sumber kebenaran.
+  IF NEW.status IS NULL THEN
+    NEW.status := CASE WHEN NEW.is_completed = true THEN 'DONE' ELSE 'TODO' END;
+  END IF;
+
+  -- Bila `is_completed` di-toggle true tanpa disertai perubahan status,
+  -- naikkan status menjadi DONE (kompatibilitas dengan toggle lama).
+  IF NEW.is_completed = true
+     AND NEW.status IS DISTINCT FROM 'DONE'
+     AND NEW.status IS DISTINCT FROM 'ARCHIVED' THEN
+    NEW.status := 'DONE';
+  END IF;
+
+  -- Sinkronisasi balik ke is_completed.
+  -- PENTING: 'ARCHIVED' sengaja TIDAK ikut me-reset is_completed, sehingga
+  -- status arsip tidak menghapus jejak "tugas ini pernah selesai".
   IF NEW.status = 'DONE' THEN
     NEW.is_completed := true;
-  -- Jika is_completed diubah menjadi true secara langsung, pastikan status = 'DONE'
-  ELSIF NEW.is_completed = true AND (OLD.is_completed IS DISTINCT FROM true OR NEW.status != 'DONE') THEN
-    NEW.status := 'DONE';
-  -- Jika status diubah ke non-DONE, set is_completed = false
-  ELSIF NEW.status IN ('BACKLOG', 'TODO', 'IN_PROGRESS', 'ARCHIVED') THEN
+  ELSIF NEW.status IN ('BACKLOG', 'TODO', 'IN_PROGRESS') THEN
     NEW.is_completed := false;
-  -- Jika is_completed diubah menjadi false saat status DONE, kembalikan ke 'TODO'
-  ELSIF NEW.is_completed = false AND NEW.status = 'DONE' THEN
-    NEW.status := 'TODO';
   END IF;
 
   RETURN NEW;

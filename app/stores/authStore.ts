@@ -315,8 +315,10 @@ export const useAuthStore = defineStore('auth', () => {
       // 2. Jika user mengunggah file foto avatar baru
       else if (payload.avatarFile) {
         const fileExt = payload.avatarFile.name.split('.').pop() || 'png'
-        // Simpan dalam folder public/ agar dapat dibaca publik tanpa RLS restriction
-        const filePath = `public/avatars/${user.value.id}-${Date.now()}.${fileExt}`
+        // Path harus `public/{userId}/...` agar cocok dengan policy INSERT
+        // owner-scoped di storage.objects (segmen ke-2 harus sama dengan auth.uid()).
+        // Avatar memang harus bisa dibaca publik, jadi tetap di folder `public`.
+        const filePath = `public/${user.value.id}/avatar-${Date.now()}.${fileExt}`
 
         const { error: uploadError } = await supabase.storage
           .from('project-crud')

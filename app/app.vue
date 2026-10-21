@@ -25,7 +25,8 @@ onMounted(() => {
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+/* Font Outfit dimuat lewat <link> di nuxt.config.ts agar non-blocking
+   dan konsisten dengan Content-Security-Policy. */
 
 *, *::before, *::after {
   box-sizing: border-box;

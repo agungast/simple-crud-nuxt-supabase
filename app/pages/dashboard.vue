@@ -304,8 +304,11 @@ const backupMenuRef = ref<HTMLDivElement | null>(null)
 
 // ─── Event Handlers ─────────────────────────────────────────────────────────
 const handleFormSubmit = async (payload: TaskFormSubmitPayload): Promise<void> => {
-  await taskStore.addTask(payload)
-  if (!taskStore.uploading) {
+  // PENTING: form hanya boleh direset bila store mengonfirmasi penyimpanan sukses.
+  // Memeriksa flag `uploading` tidak cukup — flag itu selalu false setelah
+  // `addTask` selesai, baik sukses maupun gagal.
+  const saved = await taskStore.addTask(payload)
+  if (saved) {
     taskFormRef.value?.resetForm()
   }
 }

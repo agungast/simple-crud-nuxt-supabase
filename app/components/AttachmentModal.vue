@@ -191,16 +191,23 @@ const getDocTypeClass = (fileName: string) => {
   return 'generic-doc'
 }
 
-const handlePreview = (att: TaskAttachment) => {
+const handlePreview = async (att: TaskAttachment) => {
   if (isImage(att.file_type)) {
-    const images: LightboxMediaItem[] = attachments.value
-      .filter(a => isImage(a.file_type))
-      .map(a => ({
-        url: a.is_private ? a.file_path : taskStore.getPublicOriginalUrl(a.file_path),
+    const imageAtts = attachments.value.filter(a => isImage(a.file_type))
+    const images: LightboxMediaItem[] = []
+    for (const a of imageAtts) {
+      // Path privat harus di-resolve ke Signed URL terlebih dahulu.
+      const url = a.is_private
+        ? await taskStore.ensureSignedUrl(a.file_path)
+        : taskStore.getPublicOriginalUrl(a.file_path)
+      if (!url) continue
+      images.push({
+        url,
         title: a.file_name,
         fileName: a.file_name,
         isPrivate: a.is_private
-      }))
+      })
+    }
 
     const startIdx = images.findIndex(img => img.fileName === att.file_name)
     taskStore.openLightboxGallery(images, Math.max(0, startIdx))

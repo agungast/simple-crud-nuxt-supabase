@@ -249,8 +249,8 @@
       <div class="form-divider"></div>
 
       <!-- Tombol Submit -->
-      <button id="task-submit-btn" type="submit" class="submit-btn" :disabled="uploading || !localTaskText.trim()">
-        <span v-if="uploading" class="spinner-container">
+      <button id="task-submit-btn" type="submit" class="submit-btn" :disabled="isBusy || !localTaskText.trim()">
+        <span v-if="isBusy" class="spinner-container">
           <span class="spinner"></span>
           <span>Mengunggah & Menyimpan...</span>
         </span>
@@ -294,6 +294,21 @@ const tags = ref<string[]>([])
 const tagInput = ref<string>('')
 const selectedFiles = ref<SelectedUploadFile[]>([])
 const isDragging = ref<boolean>(false)
+
+/**
+ * Kunci submit lokal. Flag `uploading` dari store baru berubah setelah
+ * `addTask()` melewati await pertama, jadi ada satu tick di mana tombol masih
+ * bisa diklik dua kali dan menghasilkan insert ganda. Kunci ini disetel
+ * sinkronus di awal handler lalu dilepas saat prop `uploading` kembali false.
+ */
+const submitLock = ref<boolean>(false)
+const isBusy = computed<boolean>(() => submitLock.value || props.uploading === true)
+
+watch(() => props.uploading, (isUploading) => {
+  if (isUploading === false) {
+    submitLock.value = false
+  }
+})
 
 watch(
   () => taskStore.activeProjectId,
@@ -404,7 +419,9 @@ const resetForm = () => {
 }
 
 const handleSubmit = () => {
+  if (submitLock.value) return
   if (!localTaskText.value.trim()) return
+  submitLock.value = true
   if (tagInput.value.trim()) {
     addTag()
   }

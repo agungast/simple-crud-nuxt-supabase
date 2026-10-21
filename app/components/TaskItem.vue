@@ -460,15 +460,26 @@ const hasPrivateAttachments = computed(() => {
   return attachments.value.some(a => a.is_private)
 })
 
-const openGallery = () => {
+const openGallery = async () => {
   if (imageAttachments.value.length > 0) {
-    const items: LightboxMediaItem[] = imageAttachments.value.map(a => ({
-      url: a.is_private ? a.file_path : taskStore.getPublicOriginalUrl(a.file_path),
-      title: `${props.task.title} — ${a.file_name}`,
-      fileName: a.file_name,
-      isPrivate: a.is_private
-    }))
-    taskStore.openLightboxGallery(items, 0)
+    const items: LightboxMediaItem[] = []
+    for (const a of imageAttachments.value) {
+      // File privat harus di-resolve ke Signed URL; path mentah tidak bisa
+      // dirender karena bucket privat menolak akses tanpa token.
+      const url = a.is_private
+        ? await taskStore.ensureSignedUrl(a.file_path)
+        : taskStore.getPublicOriginalUrl(a.file_path)
+      if (!url) continue
+      items.push({
+        url,
+        title: `${props.task.title} — ${a.file_name}`,
+        fileName: a.file_name,
+        isPrivate: a.is_private
+      })
+    }
+    if (items.length > 0) {
+      taskStore.openLightboxGallery(items, 0)
+    }
   } else if (props.task.cover_image_url) {
     taskStore.openLightbox(props.task.cover_image_url, props.task.title)
   }

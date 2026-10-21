@@ -68,24 +68,66 @@ EXECUTE FUNCTION public.handle_subtasks_user_id();
 ALTER TABLE public.subtasks ENABLE ROW LEVEL SECURITY;
 
 -- 5. RLS Policies untuk pengguna solo
+--
+-- PENTING: `user_id` saja TIDAK cukup. Kolom itu hanya menyatakan siapa yang
+-- membuat baris, bukan siapa pemilik task induknya. Tanpa pengecekan parent,
+-- user A bisa menyisipkan subtask ke task milik user B hanya denganmengirim
+-- `task_id` milik B (trigger hanya mengisi `user_id`, tidak memvalidasi
+-- `task_id`). Karena itu semua policy memverifikasi kepemilikan task induk.
+--
+-- Subquery di dalam policy ikut tunduk pada RLS tabel `todos`, jadi sudah
+-- aman dari perpindahan data antar tenant.
+
 DROP POLICY IF EXISTS "Solo user can view own subtasks" ON public.subtasks;
 CREATE POLICY "Solo user can view own subtasks"
   ON public.subtasks FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.todos t
+      WHERE t.id = subtasks.task_id
+        AND t.user_id = auth.uid()
+    )
+  );
 
 DROP POLICY IF EXISTS "Solo user can insert own subtasks" ON public.subtasks;
 CREATE POLICY "Solo user can insert own subtasks"
   ON public.subtasks FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM public.todos t
+      WHERE t.id = subtasks.task_id
+        AND t.user_id = auth.uid()
+    )
+  );
 
 DROP POLICY IF EXISTS "Solo user can update own subtasks" ON public.subtasks;
 CREATE POLICY "Solo user can update own subtasks"
   ON public.subtasks FOR UPDATE
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.todos t
+      WHERE t.id = subtasks.task_id
+        AND t.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM public.todos t
+      WHERE t.id = subtasks.task_id
+        AND t.user_id = auth.uid()
+    )
+  );
 
 DROP POLICY IF EXISTS "Solo user can delete own subtasks" ON public.subtasks;
 CREATE POLICY "Solo user can delete own subtasks"
   ON public.subtasks FOR DELETE
-  USING (auth.uid() = user_id);
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.todos t
+      WHERE t.id = subtasks.task_id
+        AND t.user_id = auth.uid()
+    )
+  );
 

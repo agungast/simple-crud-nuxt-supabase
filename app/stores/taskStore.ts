@@ -29,6 +29,74 @@ export const useTaskStore = defineStore('task', () => {
     info: (msg: string, title?: string) => useToastStore().addToast({ message: msg, type: 'info', title })
   }
 
+  // ─── Storage Buckets ──────────────────────────────────────────────────────────
+  //
+  // Kenapa dua bucket? Bucket yang ditandai `public = true` di Supabase dapat
+  // dibaca ANONIM tanpa melewati RLS sama sekali. Menaruh folder `public/` dan
+  // `private/` di bucket yang sama berarti file privat ikut terbuka — policy RLS
+  // yang seketat apa pun tidak akan menutupnya. Jadi dipisah:
+  //
+  //   project-crud          -> public   : cover tugas & avatar (URL absolut
+  //                                       disimpan permanen di database)
+  //   project-crud-private  -> private  : lampiran privat, hanya Signed URL
+  const PUBLIC_BUCKET = 'project-crud'
+  const PRIVATE_BUCKET = 'project-crud-private'
+  const SIGNED_URL_TTL_SECONDS = 60 * 60
+
+  /** Normalisasi storage key: buang slash di depan. */
+  function normalizeStoragePath(filePathOrUrl: string): string {
+    return (filePathOrUrl || '').replace(/^\/+/, '')
+  }
+
+  /** True bila key ini berada di folder privat. */
+  function isPrivatePath(filePathOrUrl: string): boolean {
+    return normalizeStoragePath(filePathOrUrl).startsWith('private/')
+  }
+
+  /** Pilih bucket berdasarkan prefix folder. */
+  function resolveBucket(filePathOrUrl: string): string {
+    return isPrivatePath(filePathOrUrl) ? PRIVATE_BUCKET : PUBLIC_BUCKET
+  }
+
+  /**
+   * Cache Signed URL untuk file privat. `getThumbnailUrl` bersifat sinkron
+   * (dipakai langsung di binding `:src`), jadi Signed URL tidak bisa di-await
+   * di sana. Pola yang dipakai: ambil dari cache; bila belum ada, picu pembuatan
+   * di latar belakang — karena cache bersifat reaktif, komponen otomatis
+   * me-render ulang begitu URL tersedia.
+   */
+  const signedUrlCache = ref<Record<string, string>>({})
+  const pendingSignedUrls = new Set<string>()
+
+  async function ensureSignedUrl(filePath: string): Promise<string | null> {
+    const path = normalizeStoragePath(filePath)
+    if (!path) return null
+
+    const cached = signedUrlCache.value[path]
+    if (cached) return cached
+
+    if (pendingSignedUrls.has(path)) return null
+    pendingSignedUrls.add(path)
+
+    try {
+      const { data, error } = await supabase.storage
+        .from(PRIVATE_BUCKET)
+        .createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
+
+      if (error) {
+        console.error('Error creating signed URL:', error.message)
+        return null
+      }
+      if (data?.signedUrl) {
+        signedUrlCache.value = { ...signedUrlCache.value, [path]: data.signedUrl }
+        return data.signedUrl
+      }
+      return null
+    } finally {
+      pendingSignedUrls.delete(path)
+    }
+  }
+
   // ─── State ────────────────────────────────────────────────────────────────────
   const tasks = ref<Task[]>([])
   const pending = ref<boolean>(false)
@@ -260,6 +328,39 @@ export const useTaskStore = defineStore('task', () => {
 
   // ─── STORAGE V2 HELPERS ───────────────────────────────────────────────────────
 
+  /** Ambil dari cache Signed URL, atau picu pembuatan bila belum ada. */
+  function getCachedSignedUrl(filePath: string): string {
+    const path = normalizeStoragePath(filePath)
+    if (!path) return ''
+    const cached = signedUrlCache.value[path]
+    if (cached) return cached
+    void ensureSignedUrl(path)
+    return ''
+  }
+
+  /**
+   * Menghapus sekumpulan object dari storage, dikelompokkan per bucket.
+   * Path privat dan publik berada di bucket berbeda, jadi pemanggilan
+   * `remove()` tunggal akan selalu gagal untuk salah satunya.
+   */
+  async function removeStoragePaths(filePaths: string[]): Promise<void> {
+    const byBucket = new Map<string, string[]>()
+    for (const rawPath of filePaths) {
+      const path = normalizeStoragePath(rawPath)
+      if (!path) continue
+      const bucket = resolveBucket(path)
+      const list = byBucket.get(bucket) ?? []
+      list.push(path)
+      byBucket.set(bucket, list)
+    }
+
+    await Promise.allSettled(
+      [...byBucket.entries()].map(([bucket, paths]) =>
+        supabase.storage.from(bucket).remove(paths)
+      )
+    )
+  }
+
   /**
    * Supabase Image Transformation:
    * Mengembalikan URL thumbnail yang ringan dan cepat (default 120x120 px).
@@ -276,9 +377,20 @@ export const useTaskStore = defineStore('task', () => {
     }
 
     // Jika berupa file_path (misal: "public/1234_abc.jpg")
+    const path = normalizeStoragePath(filePathOrUrl)
+
+    // File privat tidak punya URL stabil — harus lewat Signed URL. Ambil dari
+    // cache sinkron; kalau belum ada, picu pembuatan di latar belakang.
+    if (isPrivatePath(path)) {
+      const cached = signedUrlCache.value[path]
+      if (cached) return cached
+      void ensureSignedUrl(path)
+      return ''
+    }
+
     const { data } = supabase.storage
-      .from('project-crud')
-      .getPublicUrl(filePathOrUrl, {
+      .from(PUBLIC_BUCKET)
+      .getPublicUrl(path, {
         transform: {
           width,
           height,
@@ -296,19 +408,23 @@ export const useTaskStore = defineStore('task', () => {
   function getPublicOriginalUrl(filePath: string): string {
     if (!filePath) return ''
     if (filePath.startsWith('http')) return filePath
-    const { data } = supabase.storage.from('project-crud').getPublicUrl(filePath)
+    const { data } = supabase.storage.from(PUBLIC_BUCKET).getPublicUrl(normalizeStoragePath(filePath))
     return data.publicUrl
   }
 
   /**
    * Supabase Storage Signed URLs:
    * Menghasilkan URL bertanda tangan yang kedaluwarsa untuk file privat.
+   * WAJIB memakai bucket privat — Signed URL untuk bucket publik tidak menambah
+   * keamanan apa pun.
    */
   async function createSignedDownloadUrl(filePath: string, expiresIn = 60): Promise<string | null> {
+    const path = normalizeStoragePath(filePath)
+    if (!path) return null
     try {
       const { data, error } = await supabase.storage
-        .from('project-crud')
-        .createSignedUrl(filePath, expiresIn)
+        .from(resolveBucket(path))
+        .createSignedUrl(path, expiresIn)
 
       if (error) {
         console.error('Error creating signed URL:', error.message)
@@ -346,20 +462,30 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   /**
-   * Upload single file ke folder public/ atau private/ di bucket 'project-crud'.
+   * Upload single file ke bucket yang sesuai: `project-crud` (publik) atau
+   * `project-crud-private` (privat).
+   *
+   * PENTING: userId wajib disisipkan sebagai segmen path ke-2
+   * (`public/{userId}/{file}` / `private/{userId}/{file}`) karena
+   * `storage.objects` tidak punya kolom user_id. RLS pada bucket privat hanya
+   * bisa memverifikasi kepemilikan lewat prefix path ini.
+   * Rows legacy (tanpa userId di path) tetap terbaca karena policy SELECT
+   * publik pada bucket publik hanya memeriksa folder pertama (`public`).
    */
   async function uploadSingleFile(
-    fileItem: SelectedUploadFile
+    fileItem: SelectedUploadFile,
+    userId: string | null
   ): Promise<{ fileName: string; filePath: string; fileType: string; fileSize: number; isPrivate: boolean; publicUrl?: string } | null> {
     const file = fileItem.file
     const fileExt = file.name.split('.').pop() || 'bin'
     const randomName = Math.random().toString(36).substring(2, 10)
     const folder = fileItem.isPrivate ? 'private' : 'public'
+    const ownerSegment = userId || 'unassigned'
     const fileName = `${Date.now()}_${randomName}.${fileExt}`
-    const filePath = `${folder}/${fileName}`
+    const filePath = `${folder}/${ownerSegment}/${fileName}`
 
     const { error } = await supabase.storage
-      .from('project-crud')
+      .from(resolveBucket(filePath))
       .upload(filePath, file, {
         cacheControl: fileItem.isPrivate ? 'no-cache' : '3600',
         upsert: false
@@ -386,10 +512,17 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   // ─── CREATE (Task + Multiple Attachments) ─────────────────────────────────────
+  /**
+   * Menambahkan tugas baru.
+   *
+   * Mengembalikan `true` HANYA jika task berhasil tersimpan di database.
+   * Caller WAJIB memeriksa nilai balik ini sebelum mereset form — kalau tidak,
+   * input user akan hilang setiap kali insert gagal (regresi data).
+   */
   async function addTask(
     payloadOrText: TaskFormSubmitPayload | string,
     filesOrUndefined: SelectedUploadFile[] = []
-  ): Promise<void> {
+  ): Promise<boolean> {
     uploading.value = true
 
     try {
@@ -415,7 +548,7 @@ export const useTaskStore = defineStore('task', () => {
       let primaryImageUrl: string | null = null
 
       for (const f of files) {
-        const uploaded = await uploadSingleFile(f)
+        const uploaded = await uploadSingleFile(f, currentUserId ?? null)
         if (uploaded) {
           uploadedResults.push(uploaded)
           // Set primary image jika berupa gambar publik pertama
@@ -477,7 +610,12 @@ export const useTaskStore = defineStore('task', () => {
       if (taskError) {
         console.error('Error inserting task:', taskError)
         toast.error('Gagal menambahkan tugas: ' + taskError.message)
-        return
+        // Bersihkan file yang sudah terupload sebelum insert gagal, agar tidak
+        // menumpuk sebagai file yatim di Storage.
+        if (uploadedResults.length > 0) {
+          void removeStoragePaths(uploadedResults.map(r => r.filePath))
+        }
+        return false
       }
 
       const taskTitle = taskData.title || taskData.task || taskText
@@ -529,9 +667,11 @@ export const useTaskStore = defineStore('task', () => {
         addLog('INSERT', newTask.title)
       }
       toast.success('Tugas baru berhasil ditambahkan!')
+      return true
     } catch (err: any) {
       console.error('Unexpected error adding task:', err)
       toast.error('Terjadi kesalahan saat menambahkan tugas: ' + (err.message || err))
+      return false
     } finally {
       uploading.value = false
     }
@@ -551,7 +691,7 @@ export const useTaskStore = defineStore('task', () => {
 
       const uploadedResults = []
       for (const f of files) {
-        const uploaded = await uploadSingleFile(f)
+        const uploaded = await uploadSingleFile(f, currentUserId ?? null)
         if (uploaded) uploadedResults.push(uploaded)
       }
 
@@ -816,16 +956,18 @@ export const useTaskStore = defineStore('task', () => {
     if (task.task_attachments && task.task_attachments.length > 0) {
       const paths = task.task_attachments.map(a => a.file_path)
       try {
-        await supabase.storage.from('project-crud').remove(paths)
+        await removeStoragePaths(paths)
       } catch (err) {
         console.warn('Error batch deleting storage files:', err)
       }
     } else if (task.cover_image_url) {
-      // Legacy cleanup
+      // Legacy cleanup — path lama `public/{fileName}` tidak punya segmen userId,
+      // jadi policy owner-scoped akan menolaknya. Kegagalan di sini hanya
+      // meninggalkan file yatim, bukan merusak data.
       try {
         const parts = task.cover_image_url.split('/')
         const fileName = parts[parts.length - 1]
-        await supabase.storage.from('project-crud').remove([`public/${fileName}`])
+        await supabase.storage.from(PUBLIC_BUCKET).remove([`public/${fileName}`])
       } catch (err) {
         console.error('Error parsing image URL:', err)
       }
@@ -1562,6 +1704,9 @@ export const useTaskStore = defineStore('task', () => {
     getThumbnailUrl,
     getPublicOriginalUrl,
     createSignedDownloadUrl,
+    getCachedSignedUrl,
+    ensureSignedUrl,
+    removeStoragePaths,
     downloadAttachment,
 
     // Actions — Attachment Modal
