@@ -102,7 +102,7 @@ const populatedColumns = computed(() => {
   return columnDefinitions.map(def => {
     const colTasks = list.filter(t => {
       if (!t) return false
-      const s = t.status || (t.is_completed ? 'DONE' : 'TODO')
+      const s = t.status || 'TODO'
       return s === def.status
     })
     return {
@@ -141,7 +141,7 @@ const onDrop = (targetStatus: TaskStatus, event: DragEvent) => {
   const list = Array.isArray(props.tasks) ? props.tasks : []
   const targetTask = list.find(t => t && String(t.id) === String(taskId))
   if (targetTask) {
-    const currentStatus = targetTask.status || (targetTask.is_completed ? 'DONE' : 'TODO')
+    const currentStatus = targetTask.status || 'TODO'
     if (currentStatus !== targetStatus) {
       emit('update-status', { task: targetTask, status: targetStatus })
     }

@@ -11,13 +11,16 @@ export default defineNuxtConfig({
     '@nuxtjs/supabase',
     'nuxt-security'
   ],
+  runtimeConfig: {
+    geminiApiKey: process.env.GEMINI_API_KEY || ''
+  },
   css: [
     '~/assets/css/theme.css'
   ],
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
-      title: 'TaktVibe — Personal Task & Knowledge Management',
+      title: 'TaktVibe',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },

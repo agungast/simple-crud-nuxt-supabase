@@ -1,0 +1,12 @@
+{
+  "provider": "google",
+  "model": "gemini-1.5-flash:free",
+  "options": {
+    "max_tokens": 4096
+  },
+  "fallback": [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "deepseek/deepseek-r1:free",
+    "qwen/qwen-2.5-coder-32b-instruct:free"
+  ]
+}

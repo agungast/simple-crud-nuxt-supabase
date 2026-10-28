@@ -25,17 +25,7 @@
       <!-- Navigation -->
       <nav class="sidebar-nav">
         <p class="nav-label">MENU</p>
-        <NuxtLink to="/dashboard" class="nav-item" active-class="active">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-          </svg>
-          <span class="nav-item-text">Dashboard</span>
-        </NuxtLink>
-
-        <div class="nav-item">
+        <NuxtLink to="/dashboard" class="nav-item" :class="{ active: isFilter('all') }">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="8" y1="6" x2="21" y2="6"></line>
             <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -44,27 +34,27 @@
             <line x1="3" y1="12" x2="3.01" y2="12"></line>
             <line x1="3" y1="18" x2="3.01" y2="18"></line>
           </svg>
-          <span class="nav-item-text">Semua Tugas</span>
+          <span class="nav-item-text">Tugas Saya</span>
           <span class="nav-badge">{{ tasks?.length || 0 }}</span>
-        </div>
+        </NuxtLink>
 
-        <div class="nav-item">
+        <NuxtLink :to="{ path: '/dashboard', query: { filter: 'done' } }" class="nav-item" :class="{ active: isFilter('done') }">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 11 12 14 22 4"></polyline>
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
           </svg>
           <span class="nav-item-text">Selesai</span>
           <span class="nav-badge success">{{ completedCount }}</span>
-        </div>
+        </NuxtLink>
 
-        <div class="nav-item">
+        <NuxtLink :to="{ path: '/dashboard', query: { filter: 'active' } }" class="nav-item" :class="{ active: isFilter('active') }">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
           <span class="nav-item-text">Aktif</span>
           <span class="nav-badge warning">{{ activeCount }}</span>
-        </div>
+        </NuxtLink>
 
         <!-- ─── SPACES SECTION (SoloFlow Phase 4: Notion-style Spaces) ─── -->
         <div class="sidebar-spaces-section">
@@ -201,6 +191,7 @@
       <AttachmentModal />
       <ProfileModal />
       <LogoutModal />
+      <FocusTimer />
     </ClientOnly>
   </div>
 </template>
@@ -214,6 +205,14 @@ import { useAuthStore } from '~/stores/authStore'
 const { $pinia } = useNuxtApp()
 const taskStore = useTaskStore($pinia)
 const authStore = useAuthStore($pinia)
+const route = useRoute()
+
+// Sidebar "Semua / Selesai / Aktif" memakai query filter yang sama dengan dashboard.
+const isFilter = (value: 'all' | 'done' | 'active'): boolean => {
+  if (route.path !== '/dashboard') return false
+  const current = String(route.query.filter || 'all')
+  return current === value
+}
 
 const {
   tasks,

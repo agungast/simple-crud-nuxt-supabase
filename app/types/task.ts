@@ -79,17 +79,14 @@ export interface Task {
   user_id: string
   project_id?: string | null
   title: string
-  task?: string
   description_markdown?: string
   status: TaskStatus
   priority: TaskPriority
   tags: string[]
   due_date: string | null
-  estimated_hours: number
-  is_completed: boolean
+  estimated_hours?: number
+  actual_hours?: number
   cover_image_url?: string | null
-  image_url?: string | null
-  position?: number
   created_at: string
   updated_at?: string
   
@@ -106,64 +103,14 @@ export interface TaskPayload {
   user_id?: string
   project_id?: string | null
   title?: string
-  task?: string
   description_markdown?: string
   status?: TaskStatus
   priority?: TaskPriority
   tags?: string[]
   due_date?: string | null
   estimated_hours?: number
-  is_completed?: boolean
+  actual_hours?: number
   cover_image_url?: string | null
-  image_url?: string | null
-  position?: number
-}
-
-// ─── Activity Log (Realtime) ──────────────────────────────────────────────────
-
-/**
- * Tipe event yang dikirim oleh Supabase Realtime Postgres Changes.
- */
-export type RealtimeEventType = 'INSERT' | 'UPDATE' | 'DELETE'
-
-/**
- * Satu entri log aktivitas yang ditampilkan di panel Activity Log.
- */
-export interface ActivityLog {
-  id: number
-  type: RealtimeEventType
-  task: string
-  time: string
-}
-
-// ─── Cron Job Status ──────────────────────────────────────────────────────────
-
-/**
- * Representasi status cron job yang dikembalikan oleh RPC `get_cron_status`.
- */
-export interface CronStatus {
-  jobid?: number
-  schedule?: string
-  command?: string
-  nodename?: string
-  nodeport?: number
-  database?: string
-  username?: string
-  active?: boolean
-  status?: string
-  last_run?: string
-  message?: string
-}
-
-// ─── Backup File ──────────────────────────────────────────────────────────────
-
-/**
- * Metadata file backup yang dikembalikan oleh RPC `list_backup_files`.
- */
-export interface BackupFile {
-  name: string
-  created_at: string
-  size_bytes: number
 }
 
 // ─── Form Submit & Edit Payloads ──────────────────────────────────────────────
@@ -177,8 +124,9 @@ export interface TaskFormSubmitPayload {
   status: TaskStatus
   projectId?: string | null
   dueDate?: string | null
-  estimatedHours?: number
   tags?: string[]
+  estimatedHours?: number
+  actualHours?: number
   files: SelectedUploadFile[]
 }
 
@@ -191,8 +139,9 @@ export interface TaskEditPayload {
   status?: TaskStatus
   project_id?: string | null
   due_date?: string | null
-  estimated_hours?: number
   tags?: string[]
+  estimated_hours?: number
+  actual_hours?: number
 }
 
 /**
@@ -203,4 +152,21 @@ export interface LightboxMediaItem {
   title?: string
   fileName?: string
   isPrivate?: boolean
+}
+
+/**
+ * Sprint 3 — Template Tugas (Tabel `task_templates`).
+ */
+export interface TaskTemplate {
+  id: string
+  user_id: string
+  name: string
+  title_template: string
+  description_markdown?: string
+  priority: TaskPriority
+  tags: string[]
+  estimated_hours?: number
+  subtasks?: string[]
+  created_at: string
+  updated_at?: string
 }

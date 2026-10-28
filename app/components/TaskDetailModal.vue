@@ -22,6 +22,19 @@
             <div class="topbar-right">
               <button
                 type="button"
+                class="btn-start-focus-top"
+                @click="startFocusFromModal"
+                title="Mulai Sesi Fokus Pomodoro untuk tugas ini"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>Mulai Fokus</span>
+              </button>
+
+              <button
+                type="button"
                 class="detail-close-btn"
                 @click="handleClose"
                 title="Tutup Modal (Esc)"
@@ -84,7 +97,7 @@
               <div class="attr-item">
                 <span class="attr-label">Status Alur</span>
                 <select
-                  :value="activeTask.status || (activeTask.is_completed ? 'DONE' : 'TODO')"
+                  :value="activeTask.status || 'TODO'"
                   class="attr-select"
                   @change="onStatusChange($event)"
                 >
@@ -98,28 +111,39 @@
               <!-- Tenggat Waktu -->
               <div class="attr-item">
                 <span class="attr-label">Batas Waktu</span>
-                <input
-                  type="date"
-                  class="attr-date-input"
-                  :value="dueDateInputVal"
+                <DatePicker
+                  :model-value="dueDateInputVal"
                   @change="onDueDateChange($event)"
                 />
               </div>
 
               <!-- Estimasi Jam -->
               <div class="attr-item">
-                <span class="attr-label">Estimasi</span>
-                <div class="attr-hours-wrap">
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    class="attr-hours-input"
-                    :value="activeTask.estimated_hours || ''"
-                    placeholder="0"
-                    @change="onHoursChange($event)"
-                  />
-                  <span class="attr-hours-unit">Jam</span>
+                <span class="attr-label">Estimasi Jam</span>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  class="attr-input-num"
+                  :value="activeTask.estimated_hours || ''"
+                  placeholder="0.0"
+                  @change="onEstimatedHoursChange($event)"
+                />
+              </div>
+
+              <!-- Jam Kerja Aktual -->
+              <div class="attr-item">
+                <span class="attr-label">Jam Aktual</span>
+                <div class="actual-hours-display">
+                  <span class="hours-val">{{ Number(activeTask.actual_hours || 0).toFixed(1) }} jam</span>
+                  <button
+                    type="button"
+                    class="quick-focus-icon-btn"
+                    @click="startFocusFromModal"
+                    title="Mulai Fokus Pomodoro"
+                  >
+                    ▶ Fokus
+                  </button>
                 </div>
               </div>
             </div>
@@ -142,9 +166,78 @@
                 </svg>
                 <h3 class="section-title">Daftar Sub-Tugas</h3>
               </div>
-              <span class="subtask-ratio-badge">
-                {{ completedSubtasksCount }} dari {{ totalSubtasksCount }} Selesai ({{ subtaskProgressPercent }}%)
-              </span>
+              <div class="section-actions-wrap">
+                <button
+                  type="button"
+                  class="ai-breakdown-btn"
+                  :disabled="isGeneratingAi"
+                  @click="triggerAiBreakdown"
+                  title="Pecah tugas menjadi checklist otomatis dengan AI"
+                >
+                  <svg v-if="isGeneratingAi" class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="2" x2="12" y2="6"></line>
+                    <line x1="12" y1="18" x2="12" y2="22"></line>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                    <line x1="2" y1="12" x2="6" y2="12"></line>
+                    <line x1="18" y1="12" x2="22" y2="12"></line>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  </svg>
+                  <span>{{ isGeneratingAi ? 'Menganalisis...' : 'Pecah dengan AI' }}</span>
+                </button>
+                <span class="subtask-ratio-badge">
+                  {{ completedSubtasksCount }} / {{ totalSubtasksCount }} Selesai ({{ subtaskProgressPercent }}%)
+                </span>
+              </div>
+            </div>
+
+            <!-- AI Breakdown Suggestion Card -->
+            <div v-if="aiSuggestedSubtasks.length > 0" class="ai-suggestion-card">
+              <div class="ai-card-header">
+                <div class="ai-header-left">
+                  <span class="ai-sparkle">✨</span>
+                  <span class="ai-card-title">Rekomendasi Subtask dari AI</span>
+                </div>
+                <button type="button" class="ai-close-preview" @click="cancelAiSubtasks" title="Tutup Rekomendasi">&times;</button>
+              </div>
+              <p v-if="aiNotice" class="ai-card-notice">{{ aiNotice }}</p>
+              <p class="ai-card-desc">Pilih subtask yang ingin langsung ditambahkan:</p>
+              <div class="ai-items-list">
+                <label
+                  v-for="(item, idx) in aiSuggestedSubtasks"
+                  :key="idx"
+                  class="ai-item-check"
+                >
+                  <input type="checkbox" v-model="item.selected" class="ai-checkbox" />
+                  <input
+                    type="text"
+                    v-model="item.text"
+                    class="ai-item-input"
+                    placeholder="Ubah judul subtask jika perlu..."
+                  />
+                </label>
+              </div>
+              <div class="ai-card-actions">
+                <button
+                  type="button"
+                  class="btn-apply-ai"
+                  :disabled="!hasSelectedAiSubtasks"
+                  @click="applyAiSubtasks"
+                >
+                  Tambahkan ke Subtask ({{ selectedAiCount }})
+                </button>
+                <button
+                  type="button"
+                  class="btn-cancel-ai"
+                  @click="cancelAiSubtasks"
+                >
+                  Batal
+                </button>
+              </div>
             </div>
 
             <!-- Progress Bar -->
@@ -365,10 +458,12 @@
 
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/taskStore'
+import { useFocusStore } from '~/stores/focusStore'
 import type { Task, TaskPriority, TaskStatus, Subtask } from '~/types/task'
 import { renderMarkdown } from '~/utils/markdown'
 
 const taskStore = useTaskStore()
+const focusStore = useFocusStore()
 
 // ─── Active Task Reference ───────────────────────────────────────────────────
 const activeTask = computed<Task | null>(() => taskStore.selectedTaskForDetail)
@@ -387,7 +482,7 @@ watch(
   () => activeTask.value,
   (task) => {
     if (task) {
-      localTitle.value = task.title || task.task || ''
+      localTitle.value = task.title || ''
       localMarkdown.value = task.description_markdown || ''
       activeMdTab.value = 'write'
       descSavedRecently.value = false
@@ -405,7 +500,7 @@ const priorityOptions: { value: TaskPriority; label: string; dotClass: string }[
 ]
 
 const statusLabel = computed<string>(() => {
-  const s = activeTask.value?.status || (activeTask.value?.is_completed ? 'DONE' : 'TODO')
+  const s = activeTask.value?.status || 'TODO'
   switch (s) {
     case 'BACKLOG': return 'Backlog'
     case 'TODO': return 'To Do'
@@ -456,6 +551,77 @@ const handleToggleSubtask = async (st: Subtask) => {
 const handleDeleteSubtask = async (subtaskId: string) => {
   if (!activeTask.value) return
   await taskStore.deleteSubtask(subtaskId, activeTask.value.id)
+}
+
+// ─── Focus Mode & Duration Handlers ───────────────────────────────────────────
+const startFocusFromModal = () => {
+  if (!activeTask.value) return
+  focusStore.startFocus(activeTask.value)
+  taskStore.closeDetailModal()
+}
+
+const onEstimatedHoursChange = async (event: Event) => {
+  if (!activeTask.value) return
+  const val = (event.target as HTMLInputElement).value
+  const numVal = val ? parseFloat(val) : 0
+  await taskStore.editTask(activeTask.value, {
+    title: activeTask.value.title,
+    estimated_hours: numVal
+  })
+}
+
+// ─── AI Subtask Breakdown (Sprint 2) ─────────────────────────────────────────
+const isGeneratingAi = ref<boolean>(false)
+const aiSuggestedSubtasks = ref<{ text: string; selected: boolean }[]>([])
+const aiNotice = ref<string>('')
+
+const triggerAiBreakdown = async () => {
+  if (!activeTask.value || isGeneratingAi.value) return
+  isGeneratingAi.value = true
+  aiNotice.value = ''
+
+  try {
+    const res = await $fetch<{ success: boolean; subtasks: string[]; message?: string; isFallback?: boolean }>('/api/ai/breakdown', {
+      method: 'POST',
+      body: {
+        title: activeTask.value.title,
+        description: activeTask.value.description_markdown
+      }
+    })
+
+    if (res && Array.isArray(res.subtasks)) {
+      aiSuggestedSubtasks.value = res.subtasks.map(text => ({ text, selected: true }))
+      if (res.message) {
+        aiNotice.value = res.message
+      }
+    }
+  } catch (err: any) {
+    console.error('Error in triggerAiBreakdown:', err)
+    aiNotice.value = 'Gagal memanggil AI: ' + (err.data?.statusMessage || err.message)
+  } finally {
+    isGeneratingAi.value = false
+  }
+}
+
+const selectedAiCount = computed<number>(() => {
+  return aiSuggestedSubtasks.value.filter(s => s.selected && s.text.trim()).length
+})
+
+const hasSelectedAiSubtasks = computed<boolean>(() => selectedAiCount.value > 0)
+
+const applyAiSubtasks = async () => {
+  if (!activeTask.value) return
+  const items = aiSuggestedSubtasks.value.filter(s => s.selected && s.text.trim())
+  for (const item of items) {
+    await taskStore.addSubtask(activeTask.value.id, item.text.trim())
+  }
+  aiSuggestedSubtasks.value = []
+  aiNotice.value = ''
+}
+
+const cancelAiSubtasks = () => {
+  aiSuggestedSubtasks.value = []
+  aiNotice.value = ''
 }
 
 // ─── Markdown Workspace Logic ────────────────────────────────────────────────
@@ -541,17 +707,10 @@ const onProjectChange = async (e: Event) => {
   await taskStore.updateTaskProject(activeTask.value.id, projId)
 }
 
-const onDueDateChange = async (e: Event) => {
+const onDueDateChange = async (val: string) => {
   if (!activeTask.value) return
-  const val = (e.target as HTMLInputElement).value
   const iso = val ? new Date(val).toISOString() : null
   await taskStore.editTask(activeTask.value, { title: activeTask.value.title, due_date: iso })
-}
-
-const onHoursChange = async (e: Event) => {
-  if (!activeTask.value) return
-  const val = parseFloat((e.target as HTMLInputElement).value) || 0
-  await taskStore.editTask(activeTask.value, { title: activeTask.value.title, estimated_hours: val })
 }
 
 // ─── Attachments Trigger ─────────────────────────────────────────────────────
@@ -559,7 +718,7 @@ const totalAttachmentsCount = computed<number>(() => {
   if (!activeTask.value) return 0
   const atts = activeTask.value.task_attachments || []
   if (atts.length > 0) return atts.length
-  return activeTask.value.cover_image_url || activeTask.value.image_url ? 1 : 0
+  return activeTask.value.cover_image_url ? 1 : 0
 })
 
 const openTaskAttachments = () => {
@@ -788,56 +947,6 @@ const handleClose = () => {
 .attr-select:focus {
   border-color: #3b4d6b;
   outline: none;
-}
-
-.attr-date-input {
-  background: #111726;
-  border: 1px solid #1f2a3f;
-  border-radius: 6px;
-  color: #f1f5f9;
-  font-size: 12px;
-  padding: 0 10px;
-  height: 32px;
-  font-family: inherit;
-  width: 100%;
-  transition: border-color 0.15s ease;
-}
-
-.attr-date-input:hover,
-.attr-date-input:focus {
-  border-color: #3b4d6b;
-  outline: none;
-}
-
-.attr-hours-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.attr-hours-input {
-  width: 68px;
-  background: #111726;
-  border: 1px solid #1f2a3f;
-  border-radius: 6px;
-  color: #f1f5f9;
-  font-size: 12px;
-  padding: 0 10px;
-  height: 32px;
-  font-family: inherit;
-  transition: border-color 0.15s ease;
-}
-
-.attr-hours-input:hover,
-.attr-hours-input:focus {
-  border-color: #3b4d6b;
-  outline: none;
-}
-
-.attr-hours-unit {
-  font-size: 12px;
-  color: #94a3b8;
-  font-weight: 500;
 }
 
 @media (max-width: 768px) {
@@ -1356,6 +1465,219 @@ const handleClose = () => {
 
 .btn-done-modal:hover {
   background: #243048;
+}
+
+/* ─── FOCUS & DURATION ATTRIBUTES ───────────────────────────────────────── */
+.btn-start-focus-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #0284c7;
+  border: 1px solid #0284c7;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-start-focus-top:hover {
+  filter: brightness(1.1);
+  transform: scale(1.02);
+}
+
+.attr-input-num {
+  width: 100%;
+  background-color: #090d16;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #f1f5f9;
+  font-size: 13px;
+  font-family: inherit;
+}
+.attr-input-num:focus {
+  outline: none;
+  border-color: #0284c7;
+}
+
+.actual-hours-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #090d16;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+.hours-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #38bdf8;
+}
+.quick-focus-icon-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.quick-focus-icon-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+}
+
+/* ─── AI SUBTASK BREAKDOWN (SPRINT 2) ───────────────────────────────────── */
+.section-actions-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ai-breakdown-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background-color: rgba(2, 132, 199, 0.12);
+  border: 1px solid rgba(2, 132, 199, 0.35);
+  color: #38bdf8;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ai-breakdown-btn:hover:not(:disabled) {
+  background-color: rgba(2, 132, 199, 0.22);
+  border-color: #38bdf8;
+}
+.ai-breakdown-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ai-suggestion-card {
+  margin: 12px 0 16px 0;
+  padding: 14px;
+  background-color: #0b1120;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 10px;
+}
+.ai-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ai-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ai-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.ai-close-preview {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+}
+.ai-close-preview:hover {
+  color: #f1f5f9;
+}
+.ai-card-notice {
+  font-size: 11.5px;
+  color: #fbbf24;
+  margin: 0 0 6px 0;
+}
+.ai-card-desc {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 10px 0;
+}
+.ai-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ai-item-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #111726;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.ai-checkbox {
+  accent-color: #0284c7;
+  cursor: pointer;
+}
+.ai-item-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  font-size: 12.5px;
+  font-family: inherit;
+}
+.ai-item-input:focus {
+  outline: none;
+}
+.ai-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-apply-ai {
+  padding: 6px 14px;
+  background-color: #0284c7;
+  border: 1px solid #0284c7;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.btn-apply-ai:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+.btn-apply-ai:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-cancel-ai {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-cancel-ai:hover {
+  background-color: #1e293b;
+  color: #f1f5f9;
 }
 
 /* ─── TRANSITIONS ─────────────────────────────────────────────────────────── */

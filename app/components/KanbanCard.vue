@@ -1,7 +1,7 @@
 <template>
   <div
     class="kanban-card"
-    :class="{ 'is-dragging': isDragging, 'is-completed': task.is_completed || task.status === 'DONE' }"
+    :class="{ 'is-dragging': isDragging, 'is-completed': isDone }"
     draggable="true"
     @dragstart="onDragStart"
     @dragend="onDragEnd"
@@ -29,6 +29,17 @@
       </div>
 
       <div class="card-actions">
+        <button
+          type="button"
+          class="card-action-btn focus-btn"
+          @click.stop="focusStore.startFocus(task)"
+          title="Mulai Sesi Fokus Pomodoro (25 Menit)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </button>
         <button
           type="button"
           class="card-action-btn detail-btn"
@@ -70,15 +81,15 @@
     <!-- Card Title -->
     <h4
       class="card-title"
-      :class="{ 'completed-title': task.is_completed || task.status === 'DONE' }"
+      :class="{ 'completed-title': isDone }"
       @click.stop="taskStore.openDetailModal(task)"
       title="Klik untuk membuka detail dan catatan markdown"
     >
-      {{ task.title || task.task || 'Tanpa Judul' }}
+      {{ task.title || 'Tanpa Judul' }}
     </h4>
 
-    <!-- Meta: Subtasks, Doc, Tags & Estimated Hours -->
-    <div v-if="(task.subtasks && task.subtasks.length > 0) || task.description_markdown || (normalizedTags.length > 0) || task.estimated_hours" class="card-meta-row">
+    <!-- Meta: Subtasks, Doc & Tags -->
+    <div v-if="(task.subtasks && task.subtasks.length > 0) || task.description_markdown || (normalizedTags.length > 0)" class="card-meta-row">
       <!-- Subtasks Badge -->
       <span
         v-if="task.subtasks && task.subtasks.length > 0"
@@ -102,13 +113,6 @@
       </span>
 
       <span v-for="tag in normalizedTags" :key="tag" class="meta-tag-badge">#{{ tag }}</span>
-      <span v-if="task.estimated_hours" class="meta-hours-badge">
-        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        {{ task.estimated_hours }}h
-      </span>
     </div>
 
     <!-- Card Footer: Due Date & Attachments -->
@@ -125,6 +129,9 @@
           <span>{{ formatDueDate(task.due_date) }}</span>
         </span>
         <span v-else class="no-due-text">Tanpa tenggat</span>
+        <span v-if="task.actual_hours" class="actual-hours-pill" title="Jam fokus aktual">
+          ⏱️ {{ task.actual_hours }}h
+        </span>
       </div>
 
       <!-- Attachments Trigger -->
@@ -172,7 +179,7 @@
             </div>
             <h3 class="modal-title">Hapus Tugas</h3>
             <p class="modal-message">Apakah ingin menghapus tugas ini secara permanen?</p>
-            <p class="modal-task-name">"{{ task.title || task.task || 'Tugas' }}"</p>
+            <p class="modal-task-name">"{{ task.title || 'Tugas' }}"</p>
             <div class="modal-actions">
               <button type="button" class="btn-cancel" @click="showConfirm = false">Batal</button>
               <button type="button" class="btn-confirm" @click="confirmDelete">Hapus</button>
@@ -245,34 +252,21 @@
                 </div>
                 <div class="edit-field">
                   <label class="edit-label">Batas Waktu</label>
-                  <input v-model="editDueDate" type="date" class="edit-input edit-date" />
+                  <DatePicker v-model="editDueDate" />
                 </div>
               </div>
 
-              <!-- Estimasi & Tags Grid -->
-              <div class="edit-grid-2col">
-                <div class="edit-field">
-                  <label class="edit-label">Estimasi (Jam)</label>
-                  <input
-                    v-model="editEstimatedHours"
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    class="edit-input"
-                    placeholder="0"
-                  />
-                </div>
-                <div class="edit-field">
-                  <label class="edit-label">Tag / Label (Enter)</label>
-                  <input
-                    v-model="editTagInput"
-                    type="text"
-                    class="edit-input"
-                    placeholder="frontend, bug..."
-                    @keydown.enter.prevent="addEditTag"
-                    @keydown.,.prevent="addEditTag"
-                  />
-                </div>
+              <!-- Tag / Label -->
+              <div class="edit-field">
+                <label class="edit-label">Tag / Label (Enter)</label>
+                <input
+                  v-model="editTagInput"
+                  type="text"
+                  class="edit-input"
+                  placeholder="frontend, bug..."
+                  @keydown.enter.prevent="addEditTag"
+                  @keydown.,.prevent="addEditTag"
+                />
               </div>
 
               <!-- Ruang Kerja (Space) -->
@@ -310,9 +304,11 @@
 
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/taskStore'
+import { useFocusStore } from '~/stores/focusStore'
 import type { Task, TaskPriority, TaskStatus, TaskEditPayload } from '~/types/task'
 
 const taskStore = useTaskStore()
+const focusStore = useFocusStore()
 
 // Props
 const props = defineProps<{
@@ -327,6 +323,7 @@ const emit = defineEmits<{
 }>()
 
 const isDragging = ref<boolean>(false)
+const isDone = computed(() => props.task.status === 'DONE')
 
 // ─── Drag & Drop ─────────────────────────────────────────────────────────────
 const onDragStart = (e: DragEvent) => {
@@ -410,7 +407,7 @@ const formatDueDate = (iso: string | null | undefined) => {
 }
 
 const isOverdue = computed(() => {
-  if (!props.task?.due_date || props.task.status === 'DONE' || props.task.is_completed) return false
+  if (!props.task?.due_date || props.task.status === 'DONE') return false
   try {
     const due = new Date(props.task.due_date)
     if (isNaN(due.getTime())) return false
@@ -426,7 +423,7 @@ const isOverdue = computed(() => {
 const attachments = computed(() => props.task?.task_attachments || [])
 const totalAttachments = computed(() => {
   if (attachments.value.length > 0) return attachments.value.length
-  return props.task?.cover_image_url || props.task?.image_url ? 1 : 0
+  return props.task?.cover_image_url ? 1 : 0
 })
 
 const hasPrivateAttachments = computed(() => {
@@ -446,7 +443,6 @@ const editText = ref<string>('')
 const editPriority = ref<TaskPriority>('MEDIUM')
 const editStatus = ref<TaskStatus>('TODO')
 const editDueDate = ref<string>('')
-const editEstimatedHours = ref<number | null>(null)
 const editProjectId = ref<string | null>(null)
 const editTags = ref<string[]>([])
 const editTagInput = ref<string>('')
@@ -454,11 +450,10 @@ const editError = ref<string>('')
 const editInputRef = ref<HTMLInputElement | null>(null)
 
 const openEdit = async (): Promise<void> => {
-  editText.value = props.task.title || props.task.task || ''
+  editText.value = props.task.title || ''
   editPriority.value = props.task.priority || 'MEDIUM'
-  editStatus.value = props.task.status || (props.task.is_completed ? 'DONE' : 'TODO')
+  editStatus.value = props.task.status || 'TODO'
   editDueDate.value = props.task.due_date ? (props.task.due_date.split('T')[0] ?? '') : ''
-  editEstimatedHours.value = props.task.estimated_hours || null
   editProjectId.value = props.task.project_id || null
   editTags.value = [...normalizedTags.value]
   editTagInput.value = ''
@@ -496,7 +491,6 @@ const confirmEdit = (): void => {
       priority: editPriority.value,
       status: editStatus.value,
       due_date: editDueDate.value ? new Date(editDueDate.value).toISOString() : null,
-      estimated_hours: editEstimatedHours.value ? Number(editEstimatedHours.value) : 0,
       tags: [...editTags.value],
       project_id: editProjectId.value
     }
@@ -743,20 +737,6 @@ const confirmEdit = (): void => {
   color: #94a3b8;
   background: #090d16;
   border: 1px solid #1f2a3f;
-  padding: 2px 7px;
-  border-radius: 4px;
-  line-height: 1.3;
-}
-
-.meta-hours-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #cbd5e1;
-  background: #172136;
-  border: 1px solid #2d3b55;
   padding: 2px 7px;
   border-radius: 4px;
   line-height: 1.3;
@@ -1047,8 +1027,7 @@ const confirmEdit = (): void => {
   gap: 10px;
 }
 
-.edit-select,
-.edit-date {
+.edit-select {
   color-scheme: dark;
 }
 

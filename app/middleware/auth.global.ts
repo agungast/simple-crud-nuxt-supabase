@@ -2,6 +2,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const user = useSupabaseUser()
   const supabase = useSupabaseClient()
 
+  // Abaikan API endpoint Nitro
+  if (to.path.startsWith('/api')) return
+
   const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password']
   const isPublicRoute = publicRoutes.includes(to.path)
 

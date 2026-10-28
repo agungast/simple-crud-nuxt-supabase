@@ -145,13 +145,13 @@
                 :key="task.id"
                 class="cal-task-chip"
                 :class="{
-                  'is-done': task.is_completed || task.status === 'DONE',
+                  'is-done': task.status === 'DONE',
                   [`priority-${(task.priority || 'medium').toLowerCase()}`]: true
                 }"
                 draggable="true"
                 @dragstart="onTaskDragStart($event, task)"
                 @click.stop="taskStore.openDetailModal(task)"
-                :title="`${task.title || task.task} (Klik untuk detail)`"
+                :title="`${task.title} (Klik untuk detail)`"
               >
                 <!-- Space dot or icon -->
                 <span
@@ -165,7 +165,7 @@
                 <span v-else class="chip-priority-dot"></span>
 
                 <span class="chip-title">
-                  {{ task.title || task.task }}
+                  {{ task.title }}
                 </span>
               </div>
 
@@ -218,7 +218,7 @@
                 v-for="task in day.tasks"
                 :key="task.id"
                 class="week-task-card"
-                :class="{ 'is-done': task.is_completed || task.status === 'DONE' }"
+                :class="{ 'is-done': task.status === 'DONE' }"
                 draggable="true"
                 @dragstart="onTaskDragStart($event, task)"
                 @click.stop="taskStore.openDetailModal(task)"
@@ -236,12 +236,9 @@
                   </span>
                 </div>
                 <h5 class="week-card-title">
-                  {{ task.title || task.task }}
+                  {{ task.title }}
                 </h5>
                 <div class="week-card-footer">
-                  <span v-if="task.estimated_hours" class="week-hours-pill">
-                    {{ task.estimated_hours }}h
-                  </span>
                   <span v-if="task.subtasks && task.subtasks.length > 0" class="week-subtask-pill">
                     {{ task.subtasks.filter(s => s.is_completed).length }}/{{ task.subtasks.length }}
                   </span>
@@ -301,7 +298,7 @@
                 <span class="tray-p-dot" :class="`p-${(task.priority || 'medium').toLowerCase()}`"></span>
               </div>
               <p class="tray-card-title">
-                {{ task.title || task.task }}
+                {{ task.title }}
               </p>
             </div>
           </div>
@@ -1105,7 +1102,6 @@ const openDayTasks = (cell: MonthCell) => {
   color: #94a3b8;
 }
 
-.week-hours-pill,
 .week-subtask-pill {
   background: #090d16;
   border: 1px solid #1f2a3f;

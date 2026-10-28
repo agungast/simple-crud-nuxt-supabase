@@ -16,8 +16,15 @@
           <line x1="9" y1="9" x2="9" y2="21"></line>
         </svg>
       </div>
-      <p class="empty-title">Belum ada tugas terdaftar</p>
-      <p class="empty-desc">Tambahkan tugas pertama Anda menggunakan form di sebelah kiri.</p>
+      <p class="empty-title">Belum ada tugas</p>
+      <p class="empty-desc">{{ emptyHint || 'Tambahkan tugas pertama Anda untuk mulai mencatat pekerjaan.' }}</p>
+      <button type="button" class="empty-cta" @click="emit('create')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Tambah Tugas
+      </button>
     </div>
 
     <!-- Daftar Tugas dengan Paginasi -->
@@ -134,6 +141,7 @@ import type { Task, TaskEditPayload, TaskStatus } from '~/types/task'
 const props = defineProps<{
   tasks: Task[]
   pending?: boolean
+  emptyHint?: string
 }>()
 
 // Emits
@@ -143,6 +151,7 @@ const emit = defineEmits<{
   (e: 'edit', payload: { task: Task; payload: string | TaskEditPayload }): void
   (e: 'update-status', payload: { task: Task; status: TaskStatus }): void
   (e: 'open-lightbox', url: string): void
+  (e: 'create'): void
 }>()
 
 // ─── PAGINATION LOGIC ─────────────────────────────────────────────────────────
@@ -190,8 +199,8 @@ watch(
 )
 
 // Computed stats
-const completedCount = computed<number>(() => props.tasks.filter((t: Task) => t.is_completed).length)
-const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is_completed).length)
+const completedCount = computed<number>(() => props.tasks.filter((t: Task) => t.status === 'DONE').length)
+const activeCount = computed<number>(() => props.tasks.filter((t: Task) => t.status !== 'DONE' && t.status !== 'ARCHIVED').length)
 </script>
 
 <style scoped>
@@ -265,8 +274,35 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   font-size: 13px;
   color: #cbd5e1;
   margin: 0;
-  max-width: 280px;
-  line-height: 1.4;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 8px 14px;
+  min-height: 36px;
+  background: #005afb;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.empty-cta:hover {
+  background: #0047c7;
+}
+
+.empty-cta:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 90, 251, 0.35);
 }
 
 /* Table */
@@ -275,7 +311,7 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   flex-direction: column;
   justify-content: space-between;
   flex: 1;
-  min-height: 480px;
+  min-height: 0;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -508,6 +544,89 @@ const activeCount = computed<number>(() => props.tasks.filter((t: Task) => !t.is
   .pagination-controls {
     justify-content: center;
     width: 100%;
+  }
+}
+
+/* ─── MOBILE: tabel menjadi kartu bertumpuk (<= 720px) ───────────────────── */
+@media (max-width: 720px) {
+  .table-scroll-container {
+    overflow: visible;
+  }
+
+  .data-table {
+    display: block;
+    width: 100%;
+    font-size: 13px;
+  }
+
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table tbody {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .data-table :deep(.table-row) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "task action"
+      "priority due"
+      "status img";
+    align-items: center;
+    gap: 8px 10px;
+    height: auto;
+    padding: 12px 14px;
+    border-bottom: 1px solid #172136;
+  }
+
+  .data-table :deep(.table-row:last-child) {
+    border-bottom: none;
+  }
+
+  .data-table :deep(td) {
+    display: block;
+    width: auto;
+    padding: 0;
+    border: none;
+  }
+
+  .data-table :deep(.td-no) {
+    display: none;
+  }
+
+  .data-table :deep(.td-task) {
+    grid-area: task;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .data-table :deep(.td-action) {
+    grid-area: action;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .data-table :deep(.td-priority) {
+    grid-area: priority;
+    justify-self: start;
+  }
+
+  .data-table :deep(.td-due) {
+    grid-area: due;
+    justify-self: end;
+  }
+
+  .data-table :deep(.td-status) {
+    grid-area: status;
+    justify-self: start;
+  }
+
+  .data-table :deep(.td-img) {
+    grid-area: img;
+    justify-self: end;
   }
 }
 </style>

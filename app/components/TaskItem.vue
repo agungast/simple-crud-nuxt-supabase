@@ -1,19 +1,24 @@
 <template>
-  <tr class="table-row" :class="{ 'row-completed': task.is_completed }">
+  <tr class="table-row" :class="{ 'row-completed': isDone }">
     <!-- No -->
     <td class="td-no">{{ index }}</td>
 
-    <!-- Tugas & Meta (Tags, Estimasi, Subtasks) -->
+    <!-- Tugas & Meta (Tags, Subtasks) -->
     <td class="td-task">
       <div class="task-info-group">
         <button
           type="button"
           class="task-text-btn"
           @click="taskStore.openDetailModal(task)"
-          :title="`Buka detail & catatan untuk '${task.title || task.task}'`"
+          :title="`Buka detail & catatan untuk '${task.title}'`"
         >
-          <span class="task-text" :class="{ 'completed-text': task.is_completed }">
-            {{ task.title || task.task }}
+          <span v-if="isDone" class="done-check" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </span>
+          <span class="task-text" :class="{ 'completed-text': isDone }">
+            {{ task.title }}
           </span>
         </button>
         <div class="task-meta-row">
@@ -41,7 +46,7 @@
           </span>
 
           <!-- Markdown Doc Badge -->
-          <span
+          <span 
             v-if="task.description_markdown"
             class="meta-doc-badge"
             @click.stop="taskStore.openDetailModal(task)"
@@ -51,11 +56,16 @@
             Doc
           </span>
 
-          <span v-for="tag in task.tags" :key="tag" class="meta-tag-badge">#{{ tag }}</span>
-          <span v-if="task.estimated_hours" class="meta-hours-badge">
-            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            {{ task.estimated_hours }}h
+          <!-- Focus Hours Badge -->
+          <span
+            v-if="task.actual_hours || task.estimated_hours"
+            class="meta-focus-badge"
+            :title="`Jam aktual: ${task.actual_hours || 0}h / Estimasi: ${task.estimated_hours || 0}h`"
+          >
+            ⏱️ {{ task.actual_hours || 0 }}h / {{ task.estimated_hours || 0 }}h
           </span>
+
+          <span v-for="tag in task.tags" :key="tag" class="meta-tag-badge">#{{ tag }}</span>
         </div>
       </div>
     </td>
@@ -145,29 +155,47 @@
 
     <!-- Aksi -->
     <td class="td-action">
-      <div class="action-group">
-        <button @click="taskStore.openDetailModal(task)" class="detail-btn" title="Buka Detail & Catatan Markdown">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
+      <div class="action-menu" @click.stop>
+        <button
+          ref="triggerBtn"
+          type="button"
+          class="menu-trigger"
+          :aria-expanded="menuOpen"
+          aria-haspopup="menu"
+          aria-label="Aksi untuk tugas ini"
+          title="Aksi tugas"
+          @click="toggleMenu"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="1.8"></circle>
+            <circle cx="12" cy="12" r="1.8"></circle>
+            <circle cx="19" cy="12" r="1.8"></circle>
           </svg>
         </button>
-        <button @click="openEdit" class="edit-btn" title="Edit Nama Tugas">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
-        </button>
-        <button @click="showConfirm = true" class="delete-btn" title="Hapus Tugas">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            <line x1="10" y1="11" x2="10" y2="17"></line>
-            <line x1="14" y1="11" x2="14" y2="17"></line>
-          </svg>
-        </button>
+
+        <Teleport to="body">
+          <Transition name="slide-up">
+            <div
+              v-if="menuOpen && menuPos"
+              class="menu-panel-fixed"
+              role="menu"
+              :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }"
+            >
+              <button type="button" role="menuitem" class="menu-item" @click="runAction(() => taskStore.openDetailModal(task))">
+                Buka detail
+              </button>
+              <button type="button" role="menuitem" class="menu-item" @click="runAction(openEdit)">
+                Ubah tugas
+              </button>
+              <button type="button" role="menuitem" class="menu-item" @click="runAction(startFocusSession)">
+                Mulai fokus 25 menit
+              </button>
+              <button type="button" role="menuitem" class="menu-item menu-item-danger" @click="runAction(() => { showConfirm = true; menuOpen = false })">
+                Hapus tugas
+              </button>
+            </div>
+          </Transition>
+        </Teleport>
       </div>
     </td>
   </tr>
@@ -260,34 +288,21 @@
               </div>
               <div class="edit-field">
                 <label class="edit-label">Batas Waktu</label>
-                <input v-model="editDueDate" type="date" class="edit-input edit-date" />
+                <DatePicker v-model="editDueDate" />
               </div>
             </div>
 
-            <!-- Estimasi & Tags Grid -->
-            <div class="edit-grid-2col">
-              <div class="edit-field">
-                <label class="edit-label">Estimasi (Jam)</label>
-                <input
-                  v-model="editEstimatedHours"
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  class="edit-input"
-                  placeholder="0"
-                />
-              </div>
-              <div class="edit-field">
-                <label class="edit-label">Tag / Label (Enter)</label>
-                <input
-                  v-model="editTagInput"
-                  type="text"
-                  class="edit-input"
-                  placeholder="frontend, bug..."
-                  @keydown.enter.prevent="addEditTag"
-                  @keydown.,.prevent="addEditTag"
-                />
-              </div>
+            <!-- Tag / Label -->
+            <div class="edit-field">
+              <label class="edit-label">Tag / Label (Enter)</label>
+              <input
+                v-model="editTagInput"
+                type="text"
+                class="edit-input"
+                placeholder="frontend, bug..."
+                @keydown.enter.prevent="addEditTag"
+                @keydown.,.prevent="addEditTag"
+              />
             </div>
 
             <!-- Ruang Kerja (Space) -->
@@ -323,10 +338,17 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import { useTaskStore } from '~/stores/taskStore'
+import { useFocusStore } from '~/stores/focusStore'
 import type { Task, LightboxMediaItem, TaskPriority, TaskStatus, TaskEditPayload } from '~/types/task'
 
 const taskStore = useTaskStore()
+const focusStore = useFocusStore()
+
+const startFocusSession = () => {
+  focusStore.startFocus(props.task)
+}
 
 // Props
 const props = defineProps<{
@@ -342,6 +364,8 @@ const emit = defineEmits<{
   'update-status': [payload: { task: Task; status: TaskStatus }]
   'open-lightbox': [url: string]
 }>()
+
+const isDone = computed(() => props.task.status === 'DONE')
 
 const priorityOptions: { value: TaskPriority; label: string; dotClass: string }[] = [
   { value: 'LOW', label: 'Rendah', dotClass: 'dot-low' },
@@ -386,7 +410,7 @@ const completedSubtasksCount = computed<number>(() => {
 })
 
 const statusMeta = computed(() => {
-  const s = props.task.status || (props.task.is_completed ? 'DONE' : 'TODO')
+  const s = props.task.status || 'TODO'
   switch (s) {
     case 'BACKLOG':
       return { label: 'Backlog', class: 'status-backlog' }
@@ -412,7 +436,7 @@ const formatDueDate = (iso: string | null) => {
 }
 
 const isOverdue = computed(() => {
-  if (!props.task.due_date || props.task.status === 'DONE' || props.task.is_completed) return false
+  if (!props.task.due_date || props.task.status === 'DONE') return false
   const due = new Date(props.task.due_date)
   const now = new Date()
   now.setHours(0, 0, 0, 0)
@@ -421,7 +445,7 @@ const isOverdue = computed(() => {
 
 const cycleStatus = () => {
   const statuses: TaskStatus[] = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'DONE']
-  const curr = props.task.status || (props.task.is_completed ? 'DONE' : 'TODO')
+  const curr = props.task.status || 'TODO'
   const idx = statuses.indexOf(curr)
   const next: TaskStatus = statuses[(idx + 1) % statuses.length] ?? 'TODO'
   emit('update-status', { task: props.task, status: next })
@@ -493,13 +517,83 @@ const confirmDelete = (): void => {
   showConfirm.value = false
 }
 
+// ─── Menu Aksi Baris ──────────────────────────────────────────────────────────
+const menuOpen = ref<boolean>(false)
+const triggerBtn = ref<HTMLButtonElement | null>(null)
+const menuPos = ref<{ top: number; left: number } | null>(null)
+
+const toggleMenu = (): void => {
+  if (!menuOpen.value) {
+    taskStore.activeMenuTaskId = props.task.id
+    menuOpen.value = true
+    nextTick(() => {
+      if (triggerBtn.value) {
+        const rect = triggerBtn.value.getBoundingClientRect()
+        const menuHeight = 160
+        const viewportH = window.innerHeight
+        let top = rect.bottom + 4
+        if (rect.bottom + menuHeight + 4 > viewportH) {
+          top = rect.top - menuHeight - 4
+        }
+        menuPos.value = {
+          top,
+          left: rect.right - 186
+        }
+        if (menuPos.value.left < 8) {
+          menuPos.value.left = 8
+        }
+      }
+    })
+  } else {
+    menuOpen.value = false
+    menuPos.value = null
+    if (taskStore.activeMenuTaskId === props.task.id) {
+      taskStore.activeMenuTaskId = null
+    }
+  }
+}
+
+const runAction = (action: () => void): void => {
+  menuOpen.value = false
+  menuPos.value = null
+  if (taskStore.activeMenuTaskId === props.task.id) {
+    taskStore.activeMenuTaskId = null
+  }
+  action()
+}
+
+// Tutup menu lokal jika menu tugas lain dibuka
+watch(() => taskStore.activeMenuTaskId, (newId) => {
+  if (newId !== props.task.id && menuOpen.value) {
+    menuOpen.value = false
+    menuPos.value = null
+  }
+})
+
+const closeMenu = (): void => {
+  if (menuOpen.value) {
+    menuOpen.value = false
+    menuPos.value = null
+    if (taskStore.activeMenuTaskId === props.task.id) {
+      taskStore.activeMenuTaskId = null
+    }
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeMenu)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', closeMenu)
+})
+
 // ─── Edit Atribut Tugas ───────────────────────────────────────────────────────
 const showEdit = ref<boolean>(false)
 const editText = ref<string>('')
 const editPriority = ref<TaskPriority>('MEDIUM')
 const editStatus = ref<TaskStatus>('TODO')
 const editDueDate = ref<string>('')
-const editEstimatedHours = ref<number | null>(null)
 const editProjectId = ref<string | null>(null)
 const editTags = ref<string[]>([])
 const editTagInput = ref<string>('')
@@ -509,9 +603,8 @@ const editInputRef = ref<HTMLInputElement | null>(null)
 const openEdit = async (): Promise<void> => {
   editText.value = props.task.title
   editPriority.value = props.task.priority || 'MEDIUM'
-  editStatus.value = props.task.status || (props.task.is_completed ? 'DONE' : 'TODO')
+  editStatus.value = props.task.status || 'TODO'
   editDueDate.value = props.task.due_date ? (props.task.due_date.split('T')[0] ?? '') : ''
-  editEstimatedHours.value = props.task.estimated_hours || null
   editProjectId.value = props.task.project_id || null
   editTags.value = props.task.tags ? [...props.task.tags] : []
   editTagInput.value = ''
@@ -549,7 +642,6 @@ const confirmEdit = (): void => {
       priority: editPriority.value,
       status: editStatus.value,
       due_date: editDueDate.value ? new Date(editDueDate.value).toISOString() : null,
-      estimated_hours: editEstimatedHours.value ? Number(editEstimatedHours.value) : 0,
       tags: [...editTags.value],
       project_id: editProjectId.value
     }
@@ -572,10 +664,6 @@ const confirmEdit = (): void => {
 
 .table-row:last-child {
   border-bottom: none;
-}
-
-.table-row.row-completed {
-  opacity: 0.65;
 }
 
 td {
@@ -611,6 +699,28 @@ td {
   width: 100%;
   overflow: hidden;
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.done-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+}
+
+.task-text-btn:focus-visible {
+  outline: none;
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px rgba(0, 90, 251, 0.35);
 }
 
 .task-text-btn:hover .task-text:not(.completed-text) {
@@ -619,6 +729,8 @@ td {
 
 .task-text {
   display: block;
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 13.5px;
   color: #f8fafc;
   font-weight: 500;
@@ -711,20 +823,6 @@ td {
   color: #94a3b8;
   background: #090d16;
   border: 1px solid #1f2a3f;
-  padding: 2px 7px;
-  border-radius: 4px;
-  line-height: 1.3;
-}
-
-.meta-hours-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #cbd5e1;
-  background: #172136;
-  border: 1px solid #2d3b55;
   padding: 2px 7px;
   border-radius: 4px;
   line-height: 1.3;
@@ -986,75 +1084,104 @@ td {
   font-size: 14px;
 }
 
-/* Action Buttons */
+/* Action Menu */
 .td-action {
-  width: 90px;
-  text-align: center;
+  width: 56px;
+  text-align: right;
 }
 
-.action-group {
+.action-menu {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  justify-content: flex-end;
 }
 
-.detail-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  color: #94a3b8;
-  cursor: pointer;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+.menu-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
-}
-
-.detail-btn:hover {
-  background: #172136;
-  border-color: #2d3b55;
-  color: #818cf8;
-}
-
-.edit-btn {
-  background: transparent;
+  width: 38px;
+  height: 38px;
+  padding: 0;
   border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
   color: #cbd5e1;
   cursor: pointer;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.edit-btn:hover {
+.menu-trigger:hover,
+.menu-trigger[aria-expanded='true'] {
   background: #172136;
   border-color: #2d3b55;
   color: #ffffff;
 }
 
-.delete-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  color: #fca5a5;
-  cursor: pointer;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
+.menu-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 90, 251, 0.35);
 }
 
-.delete-btn:hover {
+.menu-panel-fixed {
+  position: fixed;
+  z-index: 9999;
+  min-width: 186px;
+  padding: 4px;
+  background: #111726;
+  border: 1px solid #27354f;
+  border-radius: 9px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  font-family: inherit;
+}
+
+.menu-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 40;
+  min-width: 186px;
+  padding: 4px;
+  background: #111726;
+  border: 1px solid #27354f;
+  border-radius: 9px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.menu-item:hover {
+  background: #1b2740;
+  color: #ffffff;
+}
+
+.menu-item:focus-visible {
+  outline: none;
+  background: #1b2740;
+  box-shadow: inset 0 0 0 2px rgba(0, 90, 251, 0.5);
+}
+
+.menu-item-danger {
+  color: #fca5a5;
+}
+
+.menu-item-danger:hover {
   background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.3);
   color: #f87171;
 }
 
@@ -1302,8 +1429,7 @@ td {
   gap: 10px;
 }
 
-.edit-select,
-.edit-date {
+.edit-select {
   color-scheme: dark;
 }
 
@@ -1394,6 +1520,20 @@ td {
 .btn-save:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+/* Touch targets on small screens */
+@media (max-width: 720px) {
+  .menu-trigger {
+    width: 44px;
+    height: 44px;
+  }
+
+  .menu-item {
+    min-height: 44px;
+    padding: 12px 12px;
+    font-size: 13.5px;
+  }
 }
 </style>
 

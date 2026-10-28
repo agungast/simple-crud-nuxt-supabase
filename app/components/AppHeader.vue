@@ -323,6 +323,7 @@ onUnmounted(() => {
 }
 
 .topbar-avatar {
+  font-family: inherit;
   width: 34px;
   height: 34px;
   border-radius: 50%;

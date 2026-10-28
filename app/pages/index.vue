@@ -70,7 +70,12 @@
 
     <!-- ─── 2. CALM & CONFIDENT HERO ───────────────────────────────────────── -->
     <section class="hero-section">
+      <div class="hero-bg-grid" aria-hidden="true"></div>
       <div class="hero-content">
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          <span>Ruang Kerja Personal Minimalis</span>
+        </div>
         <h1 class="hero-title">
           Ruang tenang untuk menyelesaikan hal yang berarti.
         </h1>
@@ -97,12 +102,15 @@
             </svg>
           </button>
         </div>
+
+        <!-- Auto Tour: Memoalkan cara kerja tiga fitur utama -->
+        <FeatureTour class="hero-tour" />
       </div>
     </section>
 
     <!-- ─── 3. THE FOCUS CANVAS: GENUINE LIVE WORKBENCH ─────────────────────── -->
     <section id="demo" class="canvas-section">
-      <div class="focus-board">
+      <div class="focus-board reveal">
         <!-- Board Header -->
         <div class="board-header">
           <div class="board-heading-wrap">
@@ -207,8 +215,9 @@
     <!-- ─── 4. EDITORIAL STORY VIGNETTES (UNNESTED & CLEAN) ────────────────── -->
     <section id="fitur" class="stories-section">
       <!-- Story 1: Tiga Sudut Pandang -->
-      <div class="story-item">
+      <div class="story-item reveal">
         <div class="story-narrative">
+          <span class="story-eyebrow"><span class="story-eyebrow-dot"></span>Bab 01 — Tiga Sudut Pandang</span>
           <h2 class="story-title">Tiga cara melihat pekerjaan Anda.</h2>
           <p class="story-desc">
             Kadang Anda memerlukan papan Kanban visual saat memproses alur kerja harian. Di hari lain, Anda memerlukan kalender bulanan untuk mengantisipasi tenggat waktu, atau tabel ringkas untuk melihat puluhan tugas sekaligus.
@@ -298,8 +307,9 @@
       </div>
 
       <!-- Story 2: Lampiran Dokumen & Media -->
-      <div class="story-item reverse">
+      <div class="story-item reverse reveal">
         <div class="story-narrative">
+          <span class="story-eyebrow"><span class="story-eyebrow-dot"></span>Bab 02 — Lampiran Terstruktur</span>
           <h2 class="story-title">Lampiran dan dokumen di tempat yang tepat.</h2>
           <p class="story-desc">
             Sematkan tangkapan layar, bukti pengerjaan, atau file pendukung langsung di dalam kartu tugas. Tidak perlu mencari tautan terpisah di aplikasi perpesanan.
@@ -328,8 +338,9 @@
       </div>
 
       <!-- Story 3: Kedaulatan & Keamanan Data -->
-      <div id="kedaulatan" class="story-item">
+      <div id="kedaulatan" class="story-item reveal">
         <div class="story-narrative">
+          <span class="story-eyebrow"><span class="story-eyebrow-dot"></span>Bab 03 — Kedaulatan Data</span>
           <h2 class="story-title">Data Anda sepenuhnya milik Anda.</h2>
           <p class="story-desc">
             Tanpa keterikatan platform (*zero vendor lock-in*). Ekspor seluruh riwayat tugas Anda ke format CSV atau JSON kapan pun Anda inginkan.
@@ -538,15 +549,43 @@ const handleScroll = () => {
   }
 }
 
+// Reveal on scroll: satu observer untuk seluruh elemen .reveal
+let revealObserver: IntersectionObserver | null = null
+
+const setupReveal = () => {
+  if (!import.meta.client) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const targets = document.querySelectorAll('.reveal')
+  if (!targets.length) return
+  document.documentElement.classList.add('has-reveal')
+  revealObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-revealed')
+          revealObserver?.unobserve(entry.target)
+        }
+      })
+    },
+    { threshold: 0.12, rootMargin: '0px 0px -60px 0px' }
+  )
+  targets.forEach(el => revealObserver!.observe(el))
+}
+
 onMounted(() => {
   if (import.meta.client) {
     window.addEventListener('scroll', handleScroll, { passive: true })
+    setupReveal()
   }
 })
 
 onUnmounted(() => {
   if (import.meta.client) {
     window.removeEventListener('scroll', handleScroll)
+  }
+  revealObserver?.disconnect()
+  if (import.meta.client) {
+    document.documentElement.classList.remove('has-reveal')
   }
 })
 </script>
@@ -561,6 +600,21 @@ onUnmounted(() => {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* ─── REVEAL ON SCROLL ────────────────────────────────────────────────────── */
+/* State tersembunyi hanya aktif bila JS menyiapkan observer (html.has-reveal),
+   sehingga konten tetap terlihat bila JS gagal atau dimatikan. */
+html.has-reveal .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+html.has-reveal .reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ─── 1. TOP NAV ─────────────────────────────────────────────────────────── */
@@ -749,13 +803,63 @@ html.light .site-header.scrolled {
 
 /* ─── 2. HERO SECTION ────────────────────────────────────────────────────── */
 .hero-section {
-  padding: 84px 24px 48px;
+  position: relative;
+  padding: 88px 24px 52px;
   text-align: center;
+  overflow: hidden;
+}
+
+.hero-bg-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 80%);
+}
+
+html.light .hero-bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
 }
 
 .hero-content {
-  max-width: 780px;
+  position: relative;
+  max-width: 900px;
   margin: 0 auto;
+}
+
+.hero-tour {
+  margin-top: 52px;
+  text-align: left;
+  animation: hero-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.34s both;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-soft);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  animation: hero-fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-primary);
 }
 
 .hero-title {
@@ -765,6 +869,7 @@ html.light .site-header.scrolled {
   letter-spacing: -0.035em;
   color: var(--text-heading);
   margin: 0 0 22px;
+  animation: hero-fade-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
 }
 
 .hero-subtitle {
@@ -773,6 +878,7 @@ html.light .site-header.scrolled {
   color: var(--text-secondary);
   margin: 0 auto 36px;
   max-width: 620px;
+  animation: hero-fade-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
 }
 
 .hero-cta-wrap {
@@ -781,6 +887,38 @@ html.light .site-header.scrolled {
   justify-content: center;
   gap: 14px;
   flex-wrap: wrap;
+  animation: hero-fade-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.24s both;
+}
+
+@keyframes hero-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-dot::after {
+    animation: none;
+  }
+
+  .focus-board,
+  .focus-board:hover {
+    transform: none;
+    transition: none;
+  }
+
+  .hero-badge,
+  .hero-title,
+  .hero-subtitle,
+  .hero-cta-wrap,
+  .hero-tour {
+    animation: none;
+  }
 }
 
 /* ─── 3. THE FOCUS CANVAS (NATURAL ELEVATION, NO WIDE SHADOW) ────────────── */
@@ -794,14 +932,26 @@ html.light .site-header.scrolled {
 .focus-board {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
+  border-top: 2px solid var(--accent-primary);
   border-radius: 12px;
   /* NATURAL ELEVATION COMPLIANT WITH AGENTS.md (No giant 32px diffuse glow) */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.focus-board:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16), 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 html.light .focus-board {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+html.light .focus-board:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 .board-header {
@@ -826,6 +976,22 @@ html.light .focus-board {
   height: 8px;
   border-radius: 50%;
   background: var(--color-success);
+  position: relative;
+}
+
+.board-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid var(--color-success);
+  opacity: 0.6;
+  animation: pulse-ring 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  70%, 100% { transform: scale(2.2); opacity: 0; }
 }
 
 .board-title {
@@ -1028,6 +1194,25 @@ html.light .focus-board {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.story-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  margin-bottom: -4px;
+}
+
+.story-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  flex-shrink: 0;
 }
 
 .story-title {

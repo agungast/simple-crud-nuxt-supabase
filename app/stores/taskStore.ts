@@ -13,10 +13,7 @@ import type {
   TaskFormSubmitPayload,
   TaskEditPayload,
   LightboxMediaItem,
-  ActivityLog,
-  RealtimeEventType,
-  CronStatus,
-  BackupFile
+  TaskTemplate
 } from '~/types/task'
 
 export const useTaskStore = defineStore('task', () => {
@@ -102,6 +99,21 @@ export const useTaskStore = defineStore('task', () => {
   const pending = ref<boolean>(false)
   const uploading = ref<boolean>(false)
 
+  // Action Menu (TaskItem dropdown exclusivity)
+  const activeMenuTaskId = ref<string | number | null>(null)
+
+  // Task Templates (Sprint 3 — AI Natural Language Quick Add & Templates)
+  const templates = ref<TaskTemplate[]>([])
+  const showTemplateModal = ref<boolean>(false)
+
+  function openTemplateModal(): void {
+    showTemplateModal.value = true
+  }
+
+  function closeTemplateModal(): void {
+    showTemplateModal.value = false
+  }
+
   // Sidebar
   const sidebarCollapsed = ref<boolean>(false)
 
@@ -128,23 +140,6 @@ export const useTaskStore = defineStore('task', () => {
   const selectedTaskForDetail = ref<Task | null>(null)
   const showDetailModal = ref<boolean>(false)
   const detailLoading = ref<boolean>(false)
-
-  // Backup
-  const latestBackups = ref<BackupFile[]>([])
-  const backupLoading = ref<boolean>(false)
-  const showBackupMenu = ref<boolean>(false)
-
-  // Activity Log (Realtime)
-  const activityLogs = ref<ActivityLog[]>([])
-  const isRealtimeConnected = ref<boolean>(false)
-  let logIdCounter: number = 0
-
-  // Cron Job Status
-  const cronStatus = ref<CronStatus | null>(null)
-  const cronLoading = ref<boolean>(false)
-
-  // Realtime channel reference (tidak perlu reaktif)
-  let realtimeChannel: ReturnType<typeof supabase.channel> | null = null
 
   // View Mode ('table' | 'kanban' | 'calendar')
   const viewMode = ref<'table' | 'kanban' | 'calendar'>('table')
@@ -199,7 +194,7 @@ export const useTaskStore = defineStore('task', () => {
     if (!q) return list
     return list.filter((t: Task) => {
       if (!t) return false
-      const name = (t.title || t.task || '').toLowerCase()
+      const name = (t.title || '').toLowerCase()
       const matchesName = name.includes(q)
       const matchesPriority = (t.priority || '').toLowerCase().includes(q)
       const matchesStatus = (t.status || '').toLowerCase().includes(q)
@@ -222,7 +217,7 @@ export const useTaskStore = defineStore('task', () => {
     const list = Array.isArray(filteredTasks.value) ? filteredTasks.value : []
     list.forEach(task => {
       if (!task) return
-      const s = task.status || (task.is_completed ? 'DONE' : 'TODO')
+      const s = task.status || 'TODO'
       if (groups[s]) {
         groups[s].push(task)
       } else {
@@ -233,37 +228,17 @@ export const useTaskStore = defineStore('task', () => {
   })
 
   const completedCount = computed<number>(() =>
-    tasks.value.filter((t: Task) => t.is_completed).length
+    tasks.value.filter((t: Task) => t.status === 'DONE').length
   )
 
   const activeCount = computed<number>(() =>
-    tasks.value.filter((t: Task) => !t.is_completed).length
+    tasks.value.filter((t: Task) => t.status !== 'DONE' && t.status !== 'ARCHIVED').length
   )
 
   const progressPercent = computed<number>(() => {
     if (tasks.value.length === 0) return 0
     return Math.round((completedCount.value / tasks.value.length) * 100)
   })
-
-  // ─── Activity Log Helper ──────────────────────────────────────────────────────
-  function addLog(eventType: RealtimeEventType, taskName: string): void {
-    const now = new Date()
-    const time = now.toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-    activityLogs.value.unshift({
-      id: ++logIdCounter,
-      type: eventType,
-      task: taskName,
-      time
-    })
-    // Batasi log hanya 20 entri terakhir
-    if (activityLogs.value.length > 20) {
-      activityLogs.value.pop()
-    }
-  }
 
   // ─── READ (Initial Fetch with Attachments & Subtasks) ─────────────────────────
   async function fetchTasks(): Promise<void> {
@@ -299,19 +274,18 @@ export const useTaskStore = defineStore('task', () => {
           const rawSubtasks: Subtask[] = (t.subtasks ?? []).sort(
             (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           )
-          const taskName = t.title || t.task || ''
+          const taskName = t.title || ''
           return {
             ...t,
             title: taskName,
-            task: taskName,
             priority: t.priority || 'MEDIUM',
             status: t.status || (t.is_completed ? 'DONE' : 'TODO'),
             tags: parseTags(t.tags),
-            estimated_hours: t.estimated_hours || 0,
             due_date: t.due_date || null,
+            estimated_hours: Number(t.estimated_hours || 0),
+            actual_hours: Number(t.actual_hours || 0),
             description_markdown: t.description_markdown || '',
             cover_image_url: t.cover_image_url || t.image_url || null,
-            image_url: t.image_url || t.cover_image_url || null,
             project_id: t.project_id || null,
             project: projects.value.find(p => String(p.id) === String(t.project_id)) || null,
             task_attachments: uniqueAtts,
@@ -533,8 +507,9 @@ export const useTaskStore = defineStore('task', () => {
       const status: TaskStatus = isObject ? (payloadOrText.status ?? 'TODO') : 'TODO'
       const projectId: string | null = isObject ? (payloadOrText.projectId ?? null) : null
       const dueDate: string | null = isObject ? (payloadOrText.dueDate ?? null) : null
-      const estimatedHours: number = isObject ? (payloadOrText.estimatedHours ?? 0) : 0
       const tags: string[] = isObject ? (payloadOrText.tags ?? []) : []
+      const estimatedHours: number = isObject && payloadOrText.estimatedHours ? Number(payloadOrText.estimatedHours) : 0
+      const actualHours: number = isObject && payloadOrText.actualHours ? Number(payloadOrText.actualHours) : 0
 
       // 1. Dapatkan user_id sesi aktif
       let currentUserId = user.value?.id
@@ -559,22 +534,18 @@ export const useTaskStore = defineStore('task', () => {
       }
 
       // 3. Simpan tugas ke tabel `todos`
-      // Kolom bawaan tabel todos adalah `task`, sedangkan PRD SoloFlow menggunakan `title`.
-      // Kita kirim keduanya agar kompatibel 100% baik sebelum maupun sesudah migrasi SQL dijalankan.
       const payload: any = {
-        task: taskText,
         title: taskText,
         priority,
         status,
         project_id: projectId || null,
         due_date: dueDate,
         estimated_hours: estimatedHours,
-        tags,
-        is_completed: status === 'DONE'
+        actual_hours: actualHours,
+        tags
       }
 
       if (primaryImageUrl) {
-        payload.image_url = primaryImageUrl
         payload.cover_image_url = primaryImageUrl
       }
 
@@ -590,7 +561,7 @@ export const useTaskStore = defineStore('task', () => {
 
       // Resilient fallback jika kolom alur kerja SoloFlow (priority, status, dll.) belum dieksekusi di database
       if (taskError && (taskError.message?.includes('column') || taskError.code === 'PGRST204' || taskError.message?.includes('schema cache'))) {
-        console.warn('Kolom alur kerja SoloFlow belum ada di database Supabase. Menggunakan fallback kolom `task` bawaan:', taskError.message)
+        console.warn('Kolom alur kerja SoloFlow belum ada di database Supabase. Menggunakan fallback:', taskError.message)
         const minimalPayload: any = {
           task: taskText,
           is_completed: status === 'DONE'
@@ -623,17 +594,13 @@ export const useTaskStore = defineStore('task', () => {
       const newTask = {
         ...taskData,
         title: taskTitle,
-        task: taskTitle,
-        priority: taskData.priority || priority,
+        priority: priority || taskData.priority,
         status: taskData.status || status,
         project_id: finalProjectId,
         project: projects.value.find(p => String(p.id) === String(finalProjectId)) || null,
         due_date: taskData.due_date || dueDate,
-        estimated_hours: taskData.estimated_hours || estimatedHours,
         tags: taskData.tags || tags,
-        cover_image_url: taskData.cover_image_url || taskData.image_url || primaryImageUrl,
-        image_url: taskData.image_url || taskData.cover_image_url || primaryImageUrl,
-        is_completed: taskData.is_completed ?? (status === 'DONE')
+        cover_image_url: taskData.cover_image_url || taskData.image_url || primaryImageUrl
       } as Task
       newTask.task_attachments = []
 
@@ -664,7 +631,6 @@ export const useTaskStore = defineStore('task', () => {
       // 5. Update state lokal secara instan
       if (!tasks.value.some(t => t.id === newTask.id)) {
         tasks.value.unshift(newTask)
-        addLog('INSERT', newTask.title)
       }
       toast.success('Tugas baru berhasil ditambahkan!')
       return true
@@ -737,7 +703,6 @@ export const useTaskStore = defineStore('task', () => {
       // Tambahkan ke Activity Log
       const targetTask = tasks.value.find(t => t.id === taskId)
       const taskName = targetTask?.title || 'Tugas'
-      addLog('UPDATE', `${taskName} (+${files.length} lampiran)`)
       toast.success(`Berhasil menambahkan ${files.length} lampiran!`)
 
       return true
@@ -789,7 +754,6 @@ export const useTaskStore = defineStore('task', () => {
       }
 
       // Tambahkan ke Activity Log
-      addLog('UPDATE', `${taskName} (hapus ${attachment.file_name})`)
       toast.success(`Lampiran '${attachment.file_name}' berhasil dihapus!`)
     } catch (err: any) {
       console.error('Error deleting attachment:', err)
@@ -799,30 +763,26 @@ export const useTaskStore = defineStore('task', () => {
 
   // ─── UPDATE (toggle status) ───────────────────────────────────────────────────
   async function toggleTask(task: Task): Promise<void> {
-    const previousCompleted = task.is_completed
-    const newCompleted = !previousCompleted
-    const newStatus: TaskStatus = newCompleted ? 'DONE' : 'TODO'
+    const previousStatus = task.status
+    const newStatus: TaskStatus = previousStatus === 'DONE' ? 'TODO' : 'DONE'
     const targetIdx = tasks.value.findIndex(t => t.id === task.id)
     if (targetIdx !== -1 && tasks.value[targetIdx]) {
-      tasks.value[targetIdx].is_completed = newCompleted
       tasks.value[targetIdx].status = newStatus
     }
 
     const { error } = await (supabase
       .from('todos') as any)
-      .update({ is_completed: newCompleted, status: newStatus })
+      .update({ status: newStatus })
       .eq('id', task.id)
 
     if (error) {
       console.error('Error toggling task:', error)
       toast.error('Gagal memperbarui status tugas')
       if (targetIdx !== -1 && tasks.value[targetIdx]) {
-        tasks.value[targetIdx].is_completed = previousCompleted
-        tasks.value[targetIdx].status = task.status
+        tasks.value[targetIdx].status = previousStatus
       }
     } else {
-      addLog('UPDATE', `${task.title} (${newStatus})`)
-      if (newCompleted) {
+      if (newStatus === 'DONE') {
         toast.success(`Tugas '${task.title}' selesai! 🎉`)
       } else {
         toast.info(`Status '${task.title}' diubah ke Belum Selesai`)
@@ -833,23 +793,20 @@ export const useTaskStore = defineStore('task', () => {
   // ─── UPDATE (update status langsung) ───────────────────────────────────────────
   async function updateTaskStatus(task: Task, newStatus: TaskStatus): Promise<void> {
     const oldStatus = task.status
-    const oldCompleted = task.is_completed
-    const newCompleted = newStatus === 'DONE'
     const targetIdx = tasks.value.findIndex(t => t.id === task.id)
     if (targetIdx !== -1 && tasks.value[targetIdx]) {
       tasks.value[targetIdx].status = newStatus
-      tasks.value[targetIdx].is_completed = newCompleted
     }
 
     let { error } = await (supabase
       .from('todos') as any)
-      .update({ status: newStatus, is_completed: newCompleted })
+      .update({ status: newStatus, is_completed: newStatus === 'DONE' })
       .eq('id', task.id)
 
     if (error && (error.message?.includes('column') || error.code === 'PGRST204' || error.message?.includes('schema cache'))) {
       console.warn('Kolom status belum ada di database Supabase. Menggunakan fallback status penyelesaian.')
       const fallback = await (supabase.from('todos') as any)
-        .update({ is_completed: newCompleted })
+        .update({ is_completed: newStatus === 'DONE' })
         .eq('id', task.id)
       error = fallback.error
     }
@@ -859,10 +816,8 @@ export const useTaskStore = defineStore('task', () => {
       toast.error('Gagal memperbarui status tugas')
       if (targetIdx !== -1 && tasks.value[targetIdx]) {
         tasks.value[targetIdx].status = oldStatus
-        tasks.value[targetIdx].is_completed = oldCompleted
       }
     } else {
-      addLog('UPDATE', `${task.title} ➔ ${newStatus}`)
       toast.info(`Status '${task.title}' diubah ke ${newStatus}`)
     }
   }
@@ -877,18 +832,14 @@ export const useTaskStore = defineStore('task', () => {
     const editData: TaskEditPayload = typeof payload === 'string' ? { title: payload } : payload
     const newTitle = editData.title.trim()
     const newStatus = editData.status ?? task.status
-    const newCompleted = newStatus === 'DONE'
 
     if (targetIdx !== -1 && tasks.value[targetIdx]) {
       tasks.value[targetIdx].title = newTitle
-      tasks.value[targetIdx].task = newTitle
       if (editData.priority) tasks.value[targetIdx].priority = editData.priority
       if (editData.status) {
         tasks.value[targetIdx].status = editData.status
-        tasks.value[targetIdx].is_completed = newCompleted
       }
       if (editData.due_date !== undefined) tasks.value[targetIdx].due_date = editData.due_date
-      if (editData.estimated_hours !== undefined) tasks.value[targetIdx].estimated_hours = editData.estimated_hours
       if (editData.tags !== undefined) tasks.value[targetIdx].tags = editData.tags
       if (editData.project_id !== undefined) {
         tasks.value[targetIdx].project_id = editData.project_id
@@ -897,14 +848,14 @@ export const useTaskStore = defineStore('task', () => {
     }
 
     const updatePayload: any = {
-      task: newTitle,
       title: newTitle,
       ...(editData.priority ? { priority: editData.priority } : {}),
-      ...(editData.status ? { status: editData.status, is_completed: newCompleted } : {}),
+      ...(editData.status ? { status: editData.status } : {}),
       ...(editData.project_id !== undefined ? { project_id: editData.project_id } : {}),
       ...(editData.due_date !== undefined ? { due_date: editData.due_date } : {}),
+      ...(editData.tags !== undefined ? { tags: editData.tags } : {}),
       ...(editData.estimated_hours !== undefined ? { estimated_hours: editData.estimated_hours } : {}),
-      ...(editData.tags !== undefined ? { tags: editData.tags } : {})
+      ...(editData.actual_hours !== undefined ? { actual_hours: editData.actual_hours } : {})
     }
 
     let { error } = await (supabase
@@ -915,7 +866,7 @@ export const useTaskStore = defineStore('task', () => {
     if (error && (error.message?.includes('column') || error.code === 'PGRST204' || error.message?.includes('schema cache'))) {
       console.warn('Kolom atribut SoloFlow belum ada di database Supabase. Menggunakan fallback pembaruan kolom task bawaan.')
       const fallback = await (supabase.from('todos') as any)
-        .update({ task: newTitle, is_completed: newCompleted })
+        .update({ task: newTitle, is_completed: newStatus === 'DONE' })
         .eq('id', task.id)
       error = fallback.error
     }
@@ -927,8 +878,35 @@ export const useTaskStore = defineStore('task', () => {
         Object.assign(tasks.value[targetIdx], oldTask)
       }
     } else {
-      addLog('UPDATE', newTitle)
       toast.success('Perubahan tugas berhasil disimpan!')
+    }
+  }
+
+  // ─── LOG FOCUS TIME (POMODORO / ACTUAL HOURS) ──────────────────────────────────
+  async function logFocusTime(taskId: string, minutesSpent: number): Promise<void> {
+    const targetIdx = tasks.value.findIndex(t => String(t.id) === String(taskId))
+    if (targetIdx === -1 || !tasks.value[targetIdx]) return
+
+    const hoursToAdd = Math.round((minutesSpent / 60) * 10) / 10
+    const currentActual = Number(tasks.value[targetIdx].actual_hours || 0)
+    const newActual = Math.round((currentActual + hoursToAdd) * 10) / 10
+
+    // Update state lokal
+    tasks.value[targetIdx].actual_hours = newActual
+
+    try {
+      const { error } = await (supabase
+        .from('todos') as any)
+        .update({ actual_hours: newActual })
+        .eq('id', taskId)
+
+      if (error) {
+        console.warn('Gagal menyimpan actual_hours ke Supabase:', error.message)
+      } else {
+        toast.success(`Waktu fokus ${minutesSpent} menit (+${hoursToAdd} jam) berhasil dicatat ke tugas!`)
+      }
+    } catch (err: any) {
+      console.warn('Error saat update actual_hours:', err)
     }
   }
 
@@ -949,7 +927,6 @@ export const useTaskStore = defineStore('task', () => {
       return
     }
 
-    addLog('DELETE', task.title)
     toast.success('Tugas berhasil dihapus!')
 
     // Hapus semua file lampiran terkait dari Storage jika ada
@@ -1001,7 +978,6 @@ export const useTaskStore = defineStore('task', () => {
         }
         return false
       }
-      addLog('UPDATE', `Jadwal: ${task.title}`)
       toast.info(dueDate ? 'Batas waktu tugas berhasil diperbarui' : 'Batas waktu tugas dihapus')
       return true
     } catch (err) {
@@ -1013,126 +989,13 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  // ─── REALTIME SUBSCRIPTION ────────────────────────────────────────────────────
-  function initRealtime(): void {
-    cleanupRealtime()
-
-    realtimeChannel = supabase
-      .channel('pantau-tugas-v2')
-      .on(
-        'postgres_changes' as any,
-        { event: '*', schema: 'public', table: 'todos' },
-        (payload: any) => {
-          const currentUserId = user.value?.id
-
-          if (payload.eventType === 'INSERT') {
-            const raw = payload.new as any
-            const taskName = raw.title || raw.task || 'Tugas'
-            const newTask = {
-              ...raw,
-              title: taskName,
-              task: taskName,
-              priority: raw.priority || 'MEDIUM',
-              status: raw.status || (raw.is_completed ? 'DONE' : 'TODO'),
-              tags: raw.tags || [],
-              estimated_hours: raw.estimated_hours || 0,
-              due_date: raw.due_date || null,
-              cover_image_url: raw.cover_image_url || raw.image_url || null,
-              image_url: raw.image_url || raw.cover_image_url || null,
-              task_attachments: []
-            } as Task
-
-            if (!newTask.user_id || newTask.user_id === currentUserId) {
-              if (!tasks.value.some(t => t.id === newTask.id)) {
-                tasks.value.unshift(newTask)
-                addLog('INSERT', taskName)
-              }
-            }
-          } else if (payload.eventType === 'DELETE') {
-            const taskName = payload.old.title ?? payload.old.task ?? 'Tugas dihapus'
-            const alreadyRemoved = !tasks.value.some(t => t.id === payload.old.id)
-            tasks.value = tasks.value.filter((t: Task) => t.id !== payload.old.id)
-            if (!alreadyRemoved) {
-              addLog('DELETE', taskName)
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const raw = payload.new as any
-            const taskName = raw.title || raw.task || ''
-            const idx = tasks.value.findIndex((t: Task) => t.id === raw.id)
-            if (idx !== -1 && tasks.value[idx]) {
-              const oldTask = tasks.value[idx]
-              const existingAttachments = oldTask.task_attachments || []
-              tasks.value[idx] = {
-                ...raw,
-                title: taskName,
-                task: taskName,
-                priority: raw.priority || oldTask.priority || 'MEDIUM',
-                status: raw.status || (raw.is_completed ? 'DONE' : 'TODO'),
-                tags: raw.tags || oldTask.tags || [],
-                estimated_hours: raw.estimated_hours || oldTask.estimated_hours || 0,
-                due_date: raw.due_date || oldTask.due_date || null,
-                cover_image_url: raw.cover_image_url || raw.image_url || oldTask.cover_image_url || null,
-                image_url: raw.image_url || raw.cover_image_url || oldTask.image_url || null,
-                task_attachments: existingAttachments
-              }
-              if (oldTask.is_completed !== raw.is_completed || (oldTask.title !== taskName && oldTask.task !== taskName)) {
-                addLog('UPDATE', taskName)
-              }
-            }
-          }
-        }
-      )
-      .on(
-        'postgres_changes' as any,
-        { event: '*', schema: 'public', table: 'task_attachments' },
-        (payload: any) => {
-          if (payload.eventType === 'INSERT') {
-            const newAtt = payload.new as TaskAttachment
-            const targetIdx = tasks.value.findIndex(t => t.id === newAtt.task_id)
-            if (targetIdx !== -1 && tasks.value[targetIdx]) {
-              const existing = tasks.value[targetIdx].task_attachments || []
-              if (!existing.some(a => a.id === newAtt.id)) {
-                tasks.value[targetIdx].task_attachments = [...existing, newAtt]
-                addLog('UPDATE', `${tasks.value[targetIdx].title} (+1 lampiran)`)
-              }
-            }
-          } else if (payload.eventType === 'DELETE') {
-            const oldAtt = payload.old as TaskAttachment
-            const targetIdx = tasks.value.findIndex(t => t.id === oldAtt.task_id)
-            if (targetIdx !== -1 && tasks.value[targetIdx]?.task_attachments) {
-              tasks.value[targetIdx].task_attachments = tasks.value[targetIdx].task_attachments!.filter(
-                a => a.id !== oldAtt.id
-              )
-              addLog('UPDATE', `${tasks.value[targetIdx].title} (lampiran dihapus)`)
-            }
-          }
-        }
-      )
-      .subscribe((status: string) => {
-        isRealtimeConnected.value = status === 'SUBSCRIBED'
-      })
-  }
-
-  function cleanupRealtime(): void {
-    if (realtimeChannel) {
-      supabase.removeChannel(realtimeChannel)
-      realtimeChannel = null
-    }
-  }
-
   // ─── RESET STATE (LOGOUT) ─────────────────────────────────────────────────────
   function resetState(): void {
-    cleanupRealtime()
     tasks.value = []
-    activityLogs.value = []
-    cronStatus.value = null
-    latestBackups.value = []
-    showBackupMenu.value = false
     lightboxItems.value = []
     lightboxIndex.value = 0
     selectedTaskForAttachments.value = null
     showAttachmentModal.value = false
-    isRealtimeConnected.value = false
   }
 
   // ─── ATTACHMENT MODAL HANDLERS ────────────────────────────────────────────────
@@ -1199,7 +1062,6 @@ export const useTaskStore = defineStore('task', () => {
         console.warn('Simpan deskripsi markdown gagal:', error.message)
         return false
       }
-      addLog('UPDATE', `Deskripsi ${tasks.value[targetIdx]?.title || 'Tugas'}`)
       toast.success('Catatan tugas berhasil disimpan!')
       return true
     } catch (err: any) {
@@ -1221,15 +1083,20 @@ export const useTaskStore = defineStore('task', () => {
       created_at: new Date().toISOString()
     }
 
-    // Optimistic local add
+    // Optimistic local add (selectedTaskForDetail biasanya referensi objek yang sama
+    // dari tasks.value, jadi hindari push ganda ke array subtasks yang sama).
     const targetIdx = tasks.value.findIndex(t => String(t.id) === String(taskId))
+    const selected = selectedTaskForDetail.value
+    const selectedIsTarget = selected && String(selected.id) === String(taskId)
+    const selectedIsSameRef = selectedIsTarget && targetIdx !== -1 && selected === tasks.value[targetIdx]
+
     if (targetIdx !== -1 && tasks.value[targetIdx]) {
       if (!tasks.value[targetIdx].subtasks) tasks.value[targetIdx].subtasks = []
       tasks.value[targetIdx].subtasks!.push(tempSubtask)
     }
-    if (selectedTaskForDetail.value && String(selectedTaskForDetail.value.id) === String(taskId)) {
-      if (!selectedTaskForDetail.value.subtasks) selectedTaskForDetail.value.subtasks = []
-      selectedTaskForDetail.value.subtasks.push(tempSubtask)
+    if (selectedIsTarget && !selectedIsSameRef && selected) {
+      if (!selected.subtasks) selected.subtasks = []
+      selected.subtasks.push(tempSubtask)
     }
 
     try {
@@ -1388,7 +1255,6 @@ export const useTaskStore = defineStore('task', () => {
         if (idx !== -1) {
           projects.value[idx] = data as Project
         }
-        addLog('INSERT', `Space: ${data.name}`)
         toast.success(`Ruang kerja '${data.name}' berhasil dibuat!`)
         return data as Project
       }
@@ -1440,7 +1306,6 @@ export const useTaskStore = defineStore('task', () => {
         projects.value[idx] = oldProj
         return false
       }
-      addLog('UPDATE', `Space: ${updatedProj.name}`)
       toast.success(`Ruang kerja '${updatedProj.name}' berhasil diperbarui!`)
       return true
     } catch (err) {
@@ -1477,7 +1342,6 @@ export const useTaskStore = defineStore('task', () => {
         projects.value = oldProjects
         return false
       }
-      addLog('DELETE', `Space: ${id.slice(0, 8)}`)
       toast.success('Ruang kerja berhasil dihapus!')
       return true
     } catch (err) {
@@ -1514,7 +1378,6 @@ export const useTaskStore = defineStore('task', () => {
         console.warn('Update task project gagal (kolom project_id mungkin belum ada):', error.message)
         return false
       }
-      addLog('UPDATE', `Pindah Space: ${tasks.value[targetIdx]?.title || 'Tugas'}`)
       toast.info(matchedProject ? `Tugas dipindahkan ke '${matchedProject.name}'` : 'Tugas dikeluarkan dari ruang kerja')
       return true
     } catch (err) {
@@ -1554,71 +1417,6 @@ export const useTaskStore = defineStore('task', () => {
       (lightboxIndex.value - 1 + lightboxItems.value.length) % lightboxItems.value.length
   }
 
-  // ─── BACKUP ───────────────────────────────────────────────────────────────────
-  async function fetchLatestBackups(): Promise<void> {
-    backupLoading.value = true
-    try {
-      const { data, error } = await supabase.rpc('list_backup_files')
-      if (!error && data) {
-        latestBackups.value = data as BackupFile[]
-      } else if (error) {
-        console.warn('[Backup] list_backup_files belum tersedia:', error.message)
-      }
-    } catch (err) {
-      console.warn('[Backup] Gagal memuat daftar backup:', err)
-    } finally {
-      backupLoading.value = false
-    }
-  }
-
-  async function toggleBackupMenu(): Promise<void> {
-    showBackupMenu.value = !showBackupMenu.value
-    if (showBackupMenu.value) {
-      await fetchLatestBackups()
-    }
-  }
-
-  async function downloadBackup(fileName: string): Promise<void> {
-    const { data, error } = await supabase.storage
-      .from('backups')
-      .download(fileName)
-
-    if (error) {
-      toast.error('Gagal mengunduh file: ' + error.message)
-      return
-    }
-
-    const url = URL.createObjectURL(data as Blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = fileName
-    a.click()
-    URL.revokeObjectURL(url)
-    showBackupMenu.value = false
-    toast.success(`File backup '${fileName}' berhasil diunduh!`)
-  }
-
-  function closeBackupMenu(): void {
-    showBackupMenu.value = false
-  }
-
-  // ─── CRON JOB STATUS ──────────────────────────────────────────────────────────
-  async function fetchCronStatus(): Promise<void> {
-    cronLoading.value = true
-    try {
-      const { data, error } = await supabase.rpc('get_cron_status')
-      if (error) {
-        console.warn('[Cron] get_cron_status belum tersedia:', error.message)
-      } else if (data && (data as CronStatus[]).length > 0) {
-        cronStatus.value = (data as CronStatus[])[0] ?? null
-      }
-    } catch (err) {
-      console.warn('[Cron] Gagal mengambil status:', err)
-    } finally {
-      cronLoading.value = false
-    }
-  }
-
   // ─── FORMAT HELPERS ───────────────────────────────────────────────────────────
   function formatBackupDate(iso: string | null): string {
     if (!iso) return '-'
@@ -1636,16 +1434,52 @@ export const useTaskStore = defineStore('task', () => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
-  function formatCronTime(isoString: string | null): string {
-    if (!isoString) return '-'
-    return new Date(isoString).toLocaleString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
+  // ─── Task Templates (Sprint 3 — AI Natural Language Quick Add & Templates) ─────
+  async function fetchTemplates(): Promise<void> {
+    try {
+      const { data, error } = await supabase
+        .from('task_templates')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching task templates:', error)
+        templates.value = []
+        return
+      }
+      templates.value = (data ?? []) as TaskTemplate[]
+    } catch (err) {
+      console.error('Unexpected error fetching task templates:', err)
+      templates.value = []
+    }
+  }
+
+  async function createTaskFromTemplate(template: TaskTemplate): Promise<boolean> {
+    const saved = await addTask({
+      taskText: template.title_template,
+      priority: template.priority || 'MEDIUM',
+      status: 'TODO',
+      projectId: null,
+      dueDate: null,
+      tags: template.tags || [],
+      estimatedHours: template.estimated_hours || 0,
+      actualHours: 0,
+      files: []
     })
+    return saved
+  }
+
+  async function deleteTemplate(id: string): Promise<void> {
+    try {
+      const { error } = await supabase.from('task_templates').delete().eq('id', id)
+      if (error) {
+        console.error('Error deleting task template:', error)
+        return
+      }
+      templates.value = templates.value.filter(t => t.id !== id)
+    } catch (err) {
+      console.error('Unexpected error deleting task template:', err)
+    }
   }
 
   // ─── RETURN ───────────────────────────────────────────────────────────────────
@@ -1663,13 +1497,6 @@ export const useTaskStore = defineStore('task', () => {
     selectedTaskForDetail,
     showDetailModal,
     detailLoading,
-    latestBackups,
-    backupLoading,
-    showBackupMenu,
-    activityLogs,
-    isRealtimeConnected,
-    cronStatus,
-    cronLoading,
 
     // Project Spaces (SoloFlow Phase 4: Notion-style Spaces)
     projects,
@@ -1701,6 +1528,7 @@ export const useTaskStore = defineStore('task', () => {
     editTask,
     deleteTask,
     updateTaskDueDate,
+    logFocusTime,
     getThumbnailUrl,
     getPublicOriginalUrl,
     createSignedDownloadUrl,
@@ -1733,19 +1561,18 @@ export const useTaskStore = defineStore('task', () => {
     updateTaskProject,
     getProjectTaskCount,
 
-    // Actions — Realtime & Lifecycle
-    initRealtime,
-    cleanupRealtime,
+    // Actions — Task Templates (Sprint 3)
+    templates,
+    activeMenuTaskId,
+    showTemplateModal,
+    openTemplateModal,
+    closeTemplateModal,
+    fetchTemplates,
+    createTaskFromTemplate,
+    deleteTemplate,
+
+    // Actions — Lifecycle
     resetState,
-
-    // Actions — Backup
-    fetchLatestBackups,
-    toggleBackupMenu,
-    downloadBackup,
-    closeBackupMenu,
-
-    // Actions — Cron
-    fetchCronStatus,
 
     // Actions — Lightbox Galeri
     openLightboxGallery,
@@ -1756,7 +1583,6 @@ export const useTaskStore = defineStore('task', () => {
 
     // Actions — Format Helpers
     formatBackupDate,
-    formatFileSize,
-    formatCronTime
+    formatFileSize
   }
 })

@@ -3,7 +3,7 @@
     <div class="form-fields-wrapper">
       <!-- Input Teks Tugas -->
       <div class="form-field">
-        <label class="form-label">Nama Tugas <span class="required">*</span></label>
+        <label class="form-label" for="task-title-input">Nama Tugas</label>
         <div class="input-wrapper">
           <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="8" y1="6" x2="21" y2="6"></line>
@@ -17,7 +17,7 @@
             id="task-title-input"
             v-model="localTaskText"
             type="text"
-            placeholder="Deskripsikan tugas Anda..."
+            placeholder="Apa yang perlu dikerjakan?"
             required
             class="text-input"
             :disabled="uploading"
@@ -25,32 +25,46 @@
         </div>
       </div>
 
-      <!-- Prioritas Tugas (Segmented Selector) -->
-      <div class="form-field">
-        <label class="form-label">Prioritas Tugas</label>
-        <div class="priority-selector">
-          <button
-            v-for="p in priorityOptions"
-            :key="p.value"
-            :id="`priority-btn-${p.value.toLowerCase()}`"
-            type="button"
-            class="priority-btn"
-            :class="[p.dotClass, { active: selectedPriority === p.value }]"
-            @click="selectedPriority = p.value"
-            :disabled="uploading"
-          >
-            <span class="p-dot"></span>
-            <span>{{ p.label }}</span>
-          </button>
-        </div>
-      </div>
+      <!-- Toggle Detail: field opsional disembunyikan sampai dibutuhkan -->
+      <button
+        type="button"
+        class="details-toggle"
+        :aria-expanded="showDetails"
+        aria-controls="task-form-details"
+        @click="showDetails = !showDetails"
+      >
+        <svg class="details-chevron" :class="{ open: showDetails }" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+        <span>{{ showDetails ? 'Sembunyikan detail' : 'Tambah detail' }}</span>
+        <span class="details-hint">prioritas, tenggat, ruang, tag, lampiran</span>
+      </button>
 
-      <!-- Grid 2 Kolom: Ruang Kerja & Status Alur -->
-      <div class="form-row-2col">
+      <div v-show="showDetails" id="task-form-details" class="form-details">
+        <!-- Prioritas Tugas (Segmented Selector) -->
+        <div class="form-field">
+          <label class="form-label">Prioritas Tugas</label>
+          <div class="priority-selector">
+            <button
+              v-for="p in priorityOptions"
+              :key="p.value"
+              :id="`priority-btn-${p.value.toLowerCase()}`"
+              type="button"
+              class="priority-btn"
+              :class="[p.dotClass, { active: selectedPriority === p.value }]"
+              @click="selectedPriority = p.value"
+              :disabled="uploading"
+            >
+              <span class="p-dot"></span>
+              <span>{{ p.label }}</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Ruang Kerja (Project Space) -->
         <div class="form-field">
           <div class="label-row-inline">
-            <label class="form-label">Ruang Kerja <span class="optional">(Space)</span></label>
+            <label class="form-label" for="task-project-select">Ruang Kerja <span class="optional">(Space)</span></label>
             <button
               type="button"
               class="create-space-inline-btn"
@@ -62,7 +76,7 @@
           </div>
           <div class="select-wrapper">
             <select id="task-project-select" v-model="selectedProjectId" class="custom-select" :disabled="uploading">
-              <option :value="null">-- Tanpa Ruang Kerja (Umum) --</option>
+              <option :value="null">Tanpa Ruang Kerja (Umum)</option>
               <option v-for="proj in taskStore.projects" :key="proj.id" :value="proj.id">
                 {{ proj.icon }} {{ proj.name }}
               </option>
@@ -73,32 +87,14 @@
           </div>
         </div>
 
-        <!-- Status Alur -->
-        <div class="form-field">
-          <label class="form-label">Status Alur</label>
-          <div class="select-wrapper">
-            <select id="task-status-select" v-model="selectedStatus" class="custom-select" :disabled="uploading">
-              <option v-for="s in statusOptions" :key="s.value" :value="s.value">
-                {{ s.label }}
-              </option>
-            </select>
-            <svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <!-- Grid 2 Kolom: Batas Waktu & Estimasi Jam -->
-      <div class="form-row-2col">
+        <!-- Grid 2 Kolom: Batas Waktu & Estimasi Jam -->
+        <div class="form-row-2col">
         <div class="form-field">
           <label class="form-label">Batas Waktu <span class="optional">(Deadline)</span></label>
           <div class="input-wrapper">
-            <input
+            <DatePicker
               id="task-due-date"
               v-model="dueDate"
-              type="date"
-              class="text-input date-input"
               :disabled="uploading"
             />
           </div>
@@ -107,17 +103,13 @@
         <div class="form-field">
           <label class="form-label">Estimasi <span class="optional">(Jam)</span></label>
           <div class="input-wrapper">
-            <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
             <input
               id="task-estimate-input"
-              v-model="estimatedHours"
+              v-model.number="estimatedHours"
               type="number"
               step="0.5"
               min="0"
-              placeholder="cth: 2.5"
+              placeholder="1.5"
               class="text-input"
               :disabled="uploading"
             />
@@ -242,11 +234,11 @@
         </div>
       </div>
     </div>
+  </div>
 
     <!-- Bottom Action Group -->
     <div class="form-bottom-actions">
-      <!-- Divider -->
-      <div class="form-divider"></div>
+      <p class="form-hint">Tekan Enter untuk menyimpan</p>
 
       <!-- Tombol Submit -->
       <button id="task-submit-btn" type="submit" class="submit-btn" :disabled="isBusy || !localTaskText.trim()">
@@ -269,7 +261,7 @@
 
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/taskStore'
-import type { TaskFormSubmitPayload, SelectedUploadFile, TaskPriority, TaskStatus } from '~/types/task'
+import type { TaskFormSubmitPayload, SelectedUploadFile, TaskPriority } from '~/types/task'
 
 const taskStore = useTaskStore()
 
@@ -286,7 +278,7 @@ const emit = defineEmits<{
 // State lokal form
 const localTaskText = ref<string>('')
 const selectedPriority = ref<TaskPriority>('MEDIUM')
-const selectedStatus = ref<TaskStatus>('TODO')
+const showDetails = ref<boolean>(false)
 const selectedProjectId = ref<string | null>(taskStore.activeProjectId || null)
 const dueDate = ref<string>('')
 const estimatedHours = ref<number | null>(null)
@@ -322,13 +314,6 @@ const priorityOptions: { value: TaskPriority; label: string; dotClass: string }[
   { value: 'MEDIUM', label: 'Sedang', dotClass: 'dot-medium' },
   { value: 'HIGH', label: 'Tinggi', dotClass: 'dot-high' },
   { value: 'URGENT', label: 'Mendesak', dotClass: 'dot-urgent' }
-]
-
-const statusOptions: { value: TaskStatus; label: string }[] = [
-  { value: 'BACKLOG', label: 'Backlog' },
-  { value: 'TODO', label: 'To Do' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'DONE', label: 'Done' }
 ]
 
 const addTag = () => {
@@ -406,7 +391,6 @@ const removeFile = (index: number) => {
 const resetForm = () => {
   localTaskText.value = ''
   selectedPriority.value = 'MEDIUM'
-  selectedStatus.value = 'TODO'
   selectedProjectId.value = taskStore.activeProjectId || null
   dueDate.value = ''
   estimatedHours.value = null
@@ -428,7 +412,7 @@ const handleSubmit = () => {
   emit('submit', {
     taskText: localTaskText.value.trim(),
     priority: selectedPriority.value,
-    status: selectedStatus.value,
+    status: 'TODO',
     projectId: selectedProjectId.value || null,
     dueDate: dueDate.value ? new Date(dueDate.value).toISOString() : null,
     estimatedHours: estimatedHours.value ? Number(estimatedHours.value) : 0,
@@ -446,17 +430,91 @@ defineExpose({
 .task-form {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 380px;
-  flex: 1;
+  gap: 14px;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Toggle untuk field opsional */
+.details-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 6px 8px 6px 4px;
+  margin-left: -4px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.details-toggle:hover {
+  color: #f1f5f9;
+  background: #111726;
+}
+
+.details-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 90, 251, 0.4);
+}
+
+.details-chevron {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.details-chevron.open {
+  transform: rotate(90deg);
+}
+
+.details-hint {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.form-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-bottom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid #1c273c;
+}
+
+.form-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.form-bottom-actions .submit-btn {
+  width: auto;
+  min-width: 150px;
+  padding: 9px 16px;
+}
+
+@media (max-width: 520px) {
+  .form-bottom-actions .submit-btn {
+    flex: 1 1 100%;
+  }
 }
 
 .form-fields-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  flex: 1;
+  gap: 14px;
 }
 
 .form-field {
@@ -669,11 +727,6 @@ defineExpose({
   right: 12px;
   color: #94a3b8;
   pointer-events: none;
-}
-
-.date-input {
-  color-scheme: dark;
-  padding-left: 14px;
 }
 
 /* Tags Container */
