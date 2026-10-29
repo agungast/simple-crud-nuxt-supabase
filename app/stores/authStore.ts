@@ -147,6 +147,35 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Masuk menggunakan OAuth (Google / GitHub)
+   */
+  async function signInWithOAuth(provider: 'google' | 'github'): Promise<boolean> {
+    loading.value = true
+    clearMessages()
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        skipBrowserRedirect: false
+        }
+      })
+      if (error) {
+        authError.value = translateAuthError(error.message)
+        toast.error(authError.value || 'Gagal masuk dengan OAuth.')
+        return false
+      }
+      return true
+    } catch (err: any) {
+      authError.value = err.message || 'Gagal masuk dengan OAuth.'
+      toast.error(authError.value || 'Gagal masuk dengan OAuth.')
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
    * Keluar dari sesi (Sign Out)
    */
   async function signOut(): Promise<void> {
@@ -411,6 +440,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Actions
     signIn,
+    signInWithOAuth,
     signUp,
     signOut,
     sendPasswordReset,

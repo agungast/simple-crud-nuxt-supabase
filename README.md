@@ -14,6 +14,8 @@ npm run dev
 
 Aplikasi berjalan di `http://localhost:3000`.
 
+> **Catatan build:** Jika VS Code mengeluh `nuxt.d.ts` tidak ditemukan (`.nuxt/tsconfig.app.json`), jalankan `npm run postinstall` (atau `nuxt prepare`). Folder `.nuxt` tidak disertakan dalam repo karena di-generate.
+
 | Perintah | Fungsi |
 | --- | --- |
 | `npm run dev` | Server pengembangan |

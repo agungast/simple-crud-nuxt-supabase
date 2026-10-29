@@ -170,3 +170,22 @@ export interface TaskTemplate {
   created_at: string
   updated_at?: string
 }
+
+/**
+ * Sprint 4 — Project Wiki / Knowledge Scratchpad
+ */
+export interface ProjectNote {
+  id: string
+  user_id: string
+  project_id: string
+  title: string
+  content_markdown: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ProjectNotePayload {
+  project_id: string
+  title?: string
+  content_markdown?: string
+}

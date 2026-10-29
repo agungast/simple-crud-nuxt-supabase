@@ -13,7 +13,9 @@ import type {
   TaskFormSubmitPayload,
   TaskEditPayload,
   LightboxMediaItem,
-  TaskTemplate
+  TaskTemplate,
+  ProjectNote,
+  ProjectNotePayload
 } from '~/types/task'
 
 export const useTaskStore = defineStore('task', () => {
@@ -105,6 +107,12 @@ export const useTaskStore = defineStore('task', () => {
   // Task Templates (Sprint 3 — AI Natural Language Quick Add & Templates)
   const templates = ref<TaskTemplate[]>([])
   const showTemplateModal = ref<boolean>(false)
+
+  // Project Notes / Wiki (Sprint 4)
+  const projectNotes = ref<ProjectNote[]>([])
+  const projectNotesLoading = ref<boolean>(false)
+  const showProjectNotesModal = ref<boolean>(false)
+  const selectedProjectForNotes = ref<Project | null>(null)
 
   function openTemplateModal(): void {
     showTemplateModal.value = true
@@ -1482,6 +1490,128 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
+  // ─── PROJECT NOTES / WIKI (Sprint 4) ─────────────────────────────────────────
+  function openProjectNotes(project: Project): void {
+    selectedProjectForNotes.value = project
+    showProjectNotesModal.value = true
+    fetchProjectNotes(project.id)
+  }
+
+  function closeProjectNotes(): void {
+    showProjectNotesModal.value = false
+  }
+
+  async function fetchProjectNotes(projectId: string): Promise<void> {
+    projectNotesLoading.value = true
+    try {
+      const { data, error } = await (supabase as any)
+        .from('project_notes')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('updated_at', { ascending: false })
+
+      if (error) {
+        console.warn('Gagal mengambil catatan project:', error.message)
+        projectNotes.value = []
+        return
+      }
+      projectNotes.value = (data ?? []) as ProjectNote[]
+    } catch (err) {
+      console.warn('Error fetching project notes:', err)
+      projectNotes.value = []
+    } finally {
+      projectNotesLoading.value = false
+    }
+  }
+
+  async function createProjectNote(payload: ProjectNotePayload): Promise<ProjectNote | null> {
+    try {
+      let currentUserId = user.value?.id
+      if (!currentUserId) {
+        const { data: userData } = await supabase.auth.getUser()
+        currentUserId = userData?.user?.id
+      }
+      const insert: any = {
+        project_id: payload.project_id,
+        user_id: currentUserId,
+        title: (payload.title || 'Catatan Tanpa Judul').trim(),
+        content_markdown: payload.content_markdown || ''
+      }
+      const { data, error } = await (supabase as any)
+        .from('project_notes')
+        .insert([insert])
+        .select()
+        .single()
+
+      if (error) {
+        console.warn('Gagal membuat catatan project:', error.message)
+        toast.error('Gagal membuat catatan.')
+        return null
+      }
+      const note = data as ProjectNote
+      projectNotes.value.unshift(note)
+      toast.success('Catatan berhasil dibuat!')
+      return note
+    } catch (err) {
+      console.warn('Error creating project note:', err)
+      toast.error('Gagal membuat catatan.')
+      return null
+    }
+  }
+
+  async function updateProjectNote(id: string, updates: Partial<ProjectNotePayload>): Promise<boolean> {
+    const idx = projectNotes.value.findIndex(n => n.id === id)
+    const oldNote = idx !== -1 ? projectNotes.value[idx] : null
+    if (idx !== -1 && projectNotes.value[idx]) {
+      projectNotes.value[idx] = { ...projectNotes.value[idx], ...updates, updated_at: new Date().toISOString() } as ProjectNote
+    }
+    try {
+      const { error } = await (supabase as any)
+        .from('project_notes')
+        .update(updates)
+        .eq('id', id)
+
+      if (error) {
+        console.warn('Gagal memperbarui catatan project:', error.message)
+        if (oldNote && idx !== -1) projectNotes.value[idx] = oldNote
+        toast.error('Gagal menyimpan catatan.')
+        return false
+      }
+      toast.success('Catatan tersimpan.')
+      return true
+    } catch (err) {
+      console.warn('Error updating project note:', err)
+      if (oldNote && idx !== -1) projectNotes.value[idx] = oldNote
+      toast.error('Gagal menyimpan catatan.')
+      return false
+    }
+  }
+
+  async function deleteProjectNote(id: string): Promise<boolean> {
+    const oldNotes = [...projectNotes.value]
+    projectNotes.value = projectNotes.value.filter(n => n.id !== id)
+    try {
+      const { error } = await (supabase as any)
+        .from('project_notes')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.warn('Gagal menghapus catatan project:', error.message)
+        projectNotes.value = oldNotes
+        toast.error('Gagal menghapus catatan.')
+        return false
+      }
+      toast.success('Catatan dihapus.')
+      return true
+    } catch (err) {
+      console.warn('Error deleting project note:', err)
+      projectNotes.value = oldNotes
+      toast.error('Gagal menghapus catatan.')
+      return false
+    }
+  }
+
   // ─── RETURN ───────────────────────────────────────────────────────────────────
   return {
     // State
@@ -1560,6 +1690,18 @@ export const useTaskStore = defineStore('task', () => {
     setActiveProject,
     updateTaskProject,
     getProjectTaskCount,
+
+    // Actions — Project Notes / Wiki (Sprint 4)
+    projectNotes,
+    projectNotesLoading,
+    showProjectNotesModal,
+    selectedProjectForNotes,
+    openProjectNotes,
+    closeProjectNotes,
+    fetchProjectNotes,
+    createProjectNote,
+    updateProjectNote,
+    deleteProjectNote,
 
     // Actions — Task Templates (Sprint 3)
     templates,

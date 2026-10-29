@@ -576,6 +576,19 @@ onMounted(() => {
   if (import.meta.client) {
     window.addEventListener('scroll', handleScroll, { passive: true })
     setupReveal()
+    // Bersihkan parameter error OAuth agar tidak terus muncul (flow_state_already_used)
+    const url = new URL(window.location.href)
+    if (url.searchParams.has('error') || url.searchParams.has('code')) {
+      url.search = ''
+      window.history.replaceState({}, '', url.toString())
+    }
+    // Jika sudah login dan kembali dari OAuth, arahkan ke dashboard
+    const supabase = useSupabaseClient()
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session && window.location.pathname === '/') {
+        navigateTo('/dashboard', { replace: true })
+      }
+    })
   }
 })
 
@@ -596,7 +609,7 @@ onUnmounted(() => {
   min-height: 100vh;
   background-color: var(--bg-base);
   color: var(--text-primary);
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
@@ -1013,6 +1026,7 @@ html.light .focus-board:hover {
 .filter-pill {
   padding: 5px 12px;
   border-radius: 6px;
+  font-family: inherit;
   font-size: 0.8125rem;
   font-weight: 500;
   background: transparent;
@@ -1262,6 +1276,7 @@ html.light .focus-board:hover {
   color: var(--text-secondary);
   cursor: pointer;
   transition: color 0.15s, background-color 0.15s;
+  font-family: inherit;
 }
 
 .view-tab.active {

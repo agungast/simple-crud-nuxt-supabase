@@ -128,6 +128,19 @@
       </button>
     </form>
 
+    <!-- OAuth Buttons -->
+    <div class="oauth-divider"><span>atau daftar dengan</span></div>
+    <div class="oauth-group">
+      <button type="button" class="oauth-btn oauth-google" @click="handleOAuth('google')" :disabled="authStore.loading">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.33v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.11z"></path><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"></path><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.66-2.84z"></path><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"></path></svg>
+        <span>Daftar dengan Google</span>
+      </button>
+      <button type="button" class="oauth-btn oauth-github" @click="handleOAuth('github')" :disabled="authStore.loading">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+        <span>Daftar dengan GitHub</span>
+      </button>
+    </div>
+
     <!-- Switch to Login -->
     <div class="auth-card-footer">
       <p>Sudah punya akun? <NuxtLink to="/login" class="auth-link">Masuk di Sini</NuxtLink></p>
@@ -158,6 +171,10 @@ const localError = ref<string | null>(null)
 onMounted(() => {
   authStore.clearMessages()
 })
+
+const handleOAuth = async (provider: 'google' | 'github') => {
+  await authStore.signInWithOAuth(provider)
+}
 
 const handleRegister = async () => {
   localError.value = null
@@ -410,4 +427,19 @@ const handleRegister = async () => {
   color: #a5b4fc;
   text-decoration: underline;
 }
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+/* OAuth buttons — shared with login */
+.oauth-divider {
+  display: flex; align-items: center; justify-content: center; gap: 12px; margin: 20px 0 14px; font-size: 12.5px; color: #94a3b8;
+}
+.oauth-divider::before, .oauth-divider::after { content: ''; flex: 1; height: 1px; background: #1e293b; }
+.oauth-group { display: flex; gap: 10px; }
+.oauth-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 600; background: #0f1626; border: 1px solid #1f2a3f; color: #f1f5f9; cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease; }
+.oauth-btn:hover:not(:disabled) { background: #111726; border-color: #2d3b55; }
+.oauth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.oauth-google:hover:not(:disabled) { border-color: #4285f4; }
+.oauth-github:hover:not(:disabled) { border-color: #ffffff; }
 </style>
