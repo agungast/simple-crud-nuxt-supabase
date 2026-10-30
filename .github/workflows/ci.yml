@@ -1,0 +1,43 @@
+name: TaktVibe CI
+
+on:
+  push:
+    branches:
+      - main
+      - takt-vibe-app
+  pull_request:
+    branches:
+      - main
+      - takt-vibe-app
+
+jobs:
+  test-and-build:
+    name: Unit Test & Build Verification
+    runs-on: ubuntu-latest
+
+    env:
+      # Dummy environment variables untuk proses kompilasi build & nuxt modules di CI
+      NODE_ENV: test
+      NUXT_PUBLIC_SUPABASE_URL: https://placeholder-url.supabase.co
+      NUXT_PUBLIC_SUPABASE_KEY: placeholder-anon-key
+      GEMINI_API_KEY: placeholder-gemini-key
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🧪 Run Vitest Unit Tests
+        run: npm run test
+
+      - name: 🏗️ Verify Nuxt Production Build
+        run: npm run build
+
