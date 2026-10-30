@@ -9,7 +9,8 @@ export default defineNuxtConfig({
   modules: [
     '@pinia/nuxt',
     '@nuxtjs/supabase',
-    'nuxt-security'
+    'nuxt-security',
+    '@vite-pwa/nuxt'
   ],
   runtimeConfig: {
     geminiApiKey: process.env.GEMINI_API_KEY || ''
@@ -84,6 +85,28 @@ export default defineNuxtConfig({
         // ke HTTPS sehingga CSS/JS gagal dimuat saat diakses lewat IP LAN.
         'upgrade-insecure-requests': process.env.NODE_ENV === 'production'
       }
+    }
+  },
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'TaktVibe',
+      short_name: 'TaktVibe',
+      description: 'Personal Task & Knowledge Management System',
+      theme_color: '#090d16',
+      background_color: '#090d16',
+      display: 'standalone',
+      icons: [
+        { src: '/images/logo-icon.png', sizes: '192x192', type: 'image/png' },
+        { src: '/images/logo-icon.png', sizes: '512x512', type: 'image/png' }
+      ]
+    },
+    workbox: {
+      navigateFallback: '/',
+      globPatterns: ['**/*.{js,css,html,png,jpg,jpeg,svg,ico,woff2}']
+    },
+    devOptions: {
+      enabled: false
     }
   }
 })

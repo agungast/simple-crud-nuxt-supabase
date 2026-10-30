@@ -1055,6 +1055,15 @@ html.light .auth-footer {
   color: #64748b;
 }
 
+html.light .oauth-divider {
+  color: #64748b !important;
+}
+
+html.light .oauth-divider::before,
+html.light .oauth-divider::after {
+  background: #e2e8f0 !important;
+}
+
 /* ─── 4. CUSTOM SCROLLBARS ───────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;

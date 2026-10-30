@@ -38,6 +38,15 @@
           <span class="nav-badge">{{ tasks?.length || 0 }}</span>
         </NuxtLink>
 
+        <NuxtLink to="/analytics" class="nav-item" :class="{ active: route.path === '/analytics' }">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          <span class="nav-item-text">Analitik & Briefing</span>
+        </NuxtLink>
+
         <NuxtLink :to="{ path: '/dashboard', query: { filter: 'done' } }" class="nav-item" :class="{ active: isFilter('done') }">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 11 12 14 22 4"></polyline>
@@ -200,6 +209,16 @@
         @prev="taskStore?.prevLightboxImage"
         @close="taskStore?.closeLightbox"
       />
+      <CommandPalette />
+      <TaktVibeCopilot ref="copilotRef" />
+      <button type="button" class="copilot-fab" @click="copilotRef?.open?.()" title="Buka TaktVibe Copilot">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path>
+          <rect x="3" y="8" width="18" height="12" rx="2"></rect>
+          <path d="M9 13v2"></path>
+          <path d="M15 13v2"></path>
+        </svg>
+      </button>
       <TaskDetailModal />
       <ProjectModal />
       <ProjectNotesModal />
@@ -217,6 +236,10 @@ import { storeToRefs } from 'pinia'
 import { useTaskStore } from '~/stores/taskStore'
 import { useAuthStore } from '~/stores/authStore'
 import ProjectNotesModal from '~/components/ProjectNotesModal.vue'
+import CommandPalette from '~/components/CommandPalette.vue'
+import TaktVibeCopilot from '~/components/TaktVibeCopilot.vue'
+
+const copilotRef = ref<InstanceType<typeof TaktVibeCopilot> | null>(null)
 
 const { $pinia } = useNuxtApp()
 const taskStore = useTaskStore($pinia)
@@ -802,6 +825,35 @@ onUnmounted(() => {
   .sidebar.mobile-open .logout-text {
     display: block !important;
   }
+}
+
+.copilot-fab {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color, #1f2a3f);
+  background: var(--bg-surface, #0f172a);
+  color: var(--text-primary, #ffffff);
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  z-index: 99990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.copilot-fab:hover {
+  background: var(--bg-hover, #111726);
+  border-color: var(--border-subtle, #2d3b55);
+}
+
+.copilot-fab:active {
+  transform: scale(0.95);
 }
 </style>
 

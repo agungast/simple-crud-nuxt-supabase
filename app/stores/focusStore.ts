@@ -6,8 +6,15 @@ import { useToastStore } from '~/stores/toastStore'
 
 export type FocusMode = 'work' | 'short_break' | 'long_break'
 
+// Define the shape of taskStore to satisfy TypeScript
+interface TaskStoreType {
+  tasks: Task[]
+  logFocusTime?: (taskId: string | number, minutes: number) => Promise<void>
+  [key: string]: any
+}
+
 export const useFocusStore = defineStore('focus', () => {
-  const taskStore = useTaskStore()
+  const taskStore = useTaskStore() as TaskStoreType
   const toast = useToastStore()
 
   // ─── Durasi (dalam Menit) ──────────────────────────────────────────────────
@@ -24,7 +31,9 @@ export const useFocusStore = defineStore('focus', () => {
   const isMinimized = ref<boolean>(false)
   const sessionsCompleted = ref<number>(0)
 
-  let timerInterval: any = null
+  // Tracking timestamp target untuk mencegah drift saat browser tab di-background/throttle
+  let targetTimestamp: number | null = null
+  let timerInterval: ReturnType<typeof setInterval> | null = null
 
   // ─── Computed ──────────────────────────────────────────────────────────────
   const formattedTime = computed<string>(() => {
@@ -75,10 +84,24 @@ export const useFocusStore = defineStore('focus', () => {
 
   // ─── Timer Core Functions ──────────────────────────────────────────────────
   function tick(): void {
-    if (timeLeft.value > 0) {
+    if (targetTimestamp !== null) {
+      const remaining = Math.max(0, Math.ceil((targetTimestamp - Date.now()) / 1000))
+      timeLeft.value = remaining
+
+      if (import.meta.client) {
+        document.title = `(${formattedTime.value}) ${activeTask.value?.title || 'Fokus'} — TaktVibe`
+      }
+
+      if (remaining <= 0) {
+        handleTimerComplete()
+      }
+    } else if (timeLeft.value > 0) {
       timeLeft.value--
       if (import.meta.client) {
         document.title = `(${formattedTime.value}) ${activeTask.value?.title || 'Fokus'} — TaktVibe`
+      }
+      if (timeLeft.value <= 0) {
+        handleTimerComplete()
       }
     } else {
       handleTimerComplete()
@@ -91,9 +114,15 @@ export const useFocusStore = defineStore('focus', () => {
 
     if (timerMode.value === 'work') {
       sessionsCompleted.value++
-      // Catat waktu kerja aktual ke Supabase via taskStore
+
+      // Catat waktu kerja aktual ke Supabase via taskStore & update reactive state
       if (activeTask.value) {
-        void taskStore.logFocusTime(activeTask.value.id, WORK_MINUTES)
+        const addedHours = Math.round((WORK_MINUTES / 60) * 10) / 10
+        activeTask.value.actual_hours = Math.round(((Number(activeTask.value.actual_hours) || 0) + addedHours) * 10) / 10
+
+        if (typeof (taskStore as any).logFocusTime === 'function') {
+          void (taskStore as any).logFocusTime(activeTask.value.id, WORK_MINUTES)
+        }
       }
 
       toast.success(
@@ -116,11 +145,18 @@ export const useFocusStore = defineStore('focus', () => {
   function startTimer(): void {
     if (isRunning.value) return
     isRunning.value = true
+    targetTimestamp = Date.now() + timeLeft.value * 1000
+
+    if (timerInterval) {
+      clearInterval(timerInterval)
+      timerInterval = null
+    }
     timerInterval = setInterval(tick, 1000)
   }
 
   function pauseTimer(): void {
     isRunning.value = false
+    targetTimestamp = null
     if (timerInterval) {
       clearInterval(timerInterval)
       timerInterval = null
@@ -157,12 +193,14 @@ export const useFocusStore = defineStore('focus', () => {
 
   // ─── Public Actions ────────────────────────────────────────────────────────
   function startFocus(task: Task): void {
-    activeTask.value = task
+    // Cari referensi task terbaru dari taskStore jika tersedia
+    const freshTask = (taskStore.tasks as Task[])?.find((t: Task) => String(t.id) === String(task.id)) || task
+    activeTask.value = freshTask
     isOpen.value = true
     isMinimized.value = false
     setMode('work')
     startTimer()
-    toast.info(`Mulai fokus pada: "${task.title}" (25 Menit)`)
+    toast.info(`Mulai fokus pada: "${task.title}" (${WORK_MINUTES} Menit)`)
   }
 
   function openFocusWidget(): void {
@@ -204,6 +242,8 @@ export const useFocusStore = defineStore('focus', () => {
     expandWidget,
     closeFocusWidget,
     toggleTimer,
+    startTimer,
+    pauseTimer,
     resetTimer,
     setMode
   }

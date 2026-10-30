@@ -431,15 +431,54 @@ const handleRegister = async () => {
   text-decoration: underline;
 }
 
-/* OAuth buttons — shared with login */
+/* OAuth buttons - shared with login */
 .oauth-divider {
-  display: flex; align-items: center; justify-content: center; gap: 12px; margin: 20px 0 14px; font-size: 12.5px; color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0 14px;
+  font-size: 12.5px;
+  color: var(--text-secondary, #94a3b8);
 }
-.oauth-divider::before, .oauth-divider::after { content: ''; flex: 1; height: 1px; background: #1e293b; }
-.oauth-group { display: flex; gap: 10px; }
-.oauth-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 600; background: #0f1626; border: 1px solid #1f2a3f; color: #f1f5f9; cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease; }
-.oauth-btn:hover:not(:disabled) { background: #111726; border-color: #2d3b55; }
-.oauth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.oauth-google:hover:not(:disabled) { border-color: #4285f4; }
-.oauth-github:hover:not(:disabled) { border-color: #ffffff; }
+.oauth-divider::before,
+.oauth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color, #1e293b);
+}
+.oauth-group {
+  display: flex;
+  gap: 10px;
+}
+.oauth-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--accent-primary, #005afb);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.oauth-btn:hover:not(:disabled) {
+  background: var(--accent-primary-hover, #004ecc);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+.oauth-btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+.oauth-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 </style>

@@ -104,7 +104,9 @@
         </div>
 
         <!-- Auto Tour: Memoalkan cara kerja tiga fitur utama -->
-        <FeatureTour class="hero-tour" />
+        <ClientOnly>
+          <component :is="FeatureTour" class="hero-tour" />
+        </ClientOnly>
       </div>
     </section>
 
@@ -432,9 +434,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import { useAuthStore } from '~/stores/authStore'
 import { useTheme } from '~/composables/useTheme'
+const FeatureTour = defineAsyncComponent(() => import('~/components/FeatureTour.vue'))
 
 definePageMeta({
   layout: false
